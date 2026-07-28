@@ -45,7 +45,7 @@ export async function POST(request: Request) {
             { expiresIn: "7d" }
         );
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             token,
             user: {
                 id: user.id,
@@ -54,6 +54,17 @@ export async function POST(request: Request) {
                 currency: user.currency,
             },
         });
+
+        response.cookies.set({
+            name: "token",
+            value: token,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 7,
+        });
+
+        return response;
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "Internal server error";
         return NextResponse.json({ message: errorMessage }, { status: 500 });

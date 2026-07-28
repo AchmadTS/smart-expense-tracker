@@ -1,0 +1,312 @@
+import Link from "next/link";
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  PiggyBank,
+  ArrowRight,
+  Target,
+} from "lucide-react";
+import { db } from "@/lib/db";
+import { transactions, budgets } from "@/schemas/schema";
+import { desc } from "drizzle-orm";
+import { formatCurrency, formatDate } from "@/utils/format";
+import KpiCard from "@/components/KpiCard";
+import CategoryBadge from "@/components/CategoryBadge";
+import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
+import CategoryBreakdownChart from "@/components/charts/CategoryBreakdownChart";
+
+interface DashboardTransaction {
+  id: number;
+  description: string | null;
+  categoryName: string | null;
+  categoryIcon: string | null;
+  categoryColor: string | null;
+  createdAt: Date | null;
+  transactionDate: string;
+  type: "income" | "expense" | "transfer";
+  amount: string;
+}
+
+interface DashboardBudget {
+  id: number;
+  categoryName: string;
+  amount: string;
+  spent: string;
+}
+
+export default async function DashboardPage() {
+  const currency = "IDR";
+  let recentTransactions: DashboardTransaction[] = [];
+  let userBudgets: DashboardBudget[] = [];
+
+  try {
+    const rawTransactions = await db
+      .select()
+      .from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .limit(5);
+
+    recentTransactions = rawTransactions.map((t) => ({
+      id: t.id,
+      description: t.description,
+      categoryName: "Umum",
+      categoryIcon: "wallet",
+      categoryColor: "#059669",
+      createdAt: t.createdAt,
+      transactionDate: t.transactionDate,
+      type: t.type,
+      amount: t.amount,
+    }));
+
+    const rawBudgets = await db.select().from(budgets);
+
+    userBudgets = rawBudgets.map((b) => ({
+      id: b.id,
+      categoryName: `Kategori #${b.categoryId}`,
+      amount: b.amount,
+      spent: "0",
+    }));
+  } catch (error) {
+    console.error("Database query error:", error);
+  }
+
+  const summary = {
+    balance: 12500000,
+    incomeThisMonth: 5000000,
+    expenseThisMonth: 2100000,
+    incomeDelta: 12,
+    expenseDelta: -5,
+    savingsRate: 58.2,
+  };
+
+  const totalSpent = userBudgets.reduce(
+    (sum, b) => sum + parseFloat(b.spent || "0"),
+    0,
+  );
+  const totalBudget = userBudgets.reduce(
+    (sum, b) => sum + parseFloat(b.amount || "0"),
+    0,
+  );
+  const aggPct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const aggColor =
+    aggPct >= 100 ? "#F43F5E" : aggPct >= 70 ? "#F59E0B" : "#10B981";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-sm text-slate-500 mt-1.5">
+          An overview of your finances this month
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="Balance"
+          value={formatCurrency(summary.balance, currency)}
+          icon={Wallet}
+          accent="emerald"
+        />
+        <KpiCard
+          label="Income"
+          value={formatCurrency(summary.incomeThisMonth, currency)}
+          delta={summary.incomeDelta}
+          icon={TrendingUp}
+          accent="orange"
+        />
+        <KpiCard
+          label="Expenses"
+          value={formatCurrency(summary.expenseThisMonth, currency)}
+          delta={summary.expenseDelta}
+          icon={TrendingDown}
+          accent="rose"
+        />
+        <KpiCard
+          label="Savings Rate"
+          value={`${summary.savingsRate.toFixed(1)}%`}
+          icon={PiggyBank}
+          accent="blue"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-6">
+          <div className="mb-5">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Monthly Trend
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Income vs expenses, last 6 months
+            </p>
+          </div>
+          <MonthlyTrendChart data={[]} currency={currency} />
+        </div>
+        <div className="bg-white rounded-3xl border border-slate-100 p-6">
+          <div className="mb-5">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Top Categories
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">Spending this month</p>
+          </div>
+          <CategoryBreakdownChart data={[]} currency={currency} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Recent Transactions
+            </h2>
+            <Link
+              href="/transactions"
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+            >
+              View all
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+          {recentTransactions.length === 0 ? (
+            <p className="text-sm text-slate-500 py-6 text-center">
+              No transactions yet.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {recentTransactions.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <CategoryBadge
+                      icon={t.categoryIcon || ""}
+                      color={t.categoryColor || ""}
+                      size="sm"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-900 truncate">
+                        {t.description || t.categoryName || "Untitled"}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {t.categoryName || "Uncategorized"} ·{" "}
+                        {formatDate(t.createdAt || t.transactionDate)}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm font-bold shrink-0 ${
+                      t.type === "income"
+                        ? "text-emerald-600"
+                        : "text-orange-500"
+                    }`}
+                  >
+                    {t.type === "income" ? "+" : "-"}
+                    {formatCurrency(t.amount, currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-100 p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Budget Status
+            </h2>
+            <Link
+              href="/budgets"
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+            >
+              View all
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          {userBudgets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                <Target size={20} className="text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900 mb-1">
+                No budgets yet
+              </p>
+              <Link
+                href="/budgets"
+                className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
+              >
+                Create one →
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="mb-5">
+                <div className="flex items-baseline justify-between mb-2">
+                  <div>
+                    <div className="text-2xl font-bold tracking-tight text-slate-900">
+                      {formatCurrency(totalSpent, currency)}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      of {formatCurrency(totalBudget, currency)} total
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-sm font-bold"
+                      style={{ color: aggColor }}
+                    >
+                      {aggPct.toFixed(0)}%
+                    </div>
+                    <div className="text-[10px] text-slate-500">used</div>
+                  </div>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(aggPct, 100)}%`,
+                      backgroundColor: aggColor,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {userBudgets.slice(0, 4).map((b) => {
+                  const spent = parseFloat(b.spent || "0");
+                  const total = parseFloat(b.amount || "0");
+                  const pct =
+                    total > 0 ? Math.min((spent / total) * 100, 100) : 0;
+                  const color =
+                    pct >= 100 ? "#F43F5E" : pct >= 70 ? "#F59E0B" : "#10B981";
+                  return (
+                    <div key={b.id}>
+                      <div className="flex justify-between items-center text-xs mb-1.5">
+                        <span className="text-slate-700 font-medium truncate">
+                          {b.categoryName}
+                        </span>
+                        <span className="text-slate-500 shrink-0 ml-2 text-[11px]">
+                          {formatCurrency(spent, currency)} /{" "}
+                          {formatCurrency(total, currency)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

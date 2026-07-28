@@ -80,7 +80,7 @@ export default function ForgotPassword() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setStep("SUCCESS");
     } catch (error) {
-      toast.error("Kode OTP salah");
+      toast.error("Wrong OTP code");
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {

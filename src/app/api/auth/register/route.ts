@@ -4,20 +4,31 @@ import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
+const registerBodySchema = z.object({
+    name: z.string().min(1, "Nama wajib diisi"),
+    email: z.string().email("Format email tidak valid"),
+    password: z.string().min(6, "Password minimal 6 karakter"),
+    currency: z.string().optional(),
+});
 
 export async function POST(request: Request) {
     try {
-        const { name, email, password, currency } = await request.json();
-
-        if (!name || !email || !password) {
+        const body = await request.json();
+        const validationResult = registerBodySchema.safeParse(body);
+        if (!validationResult.success) {
+            const errorMessages = validationResult.error.issues
+                .map((err) => err.message)
+                .join(", ");
             return NextResponse.json(
-                { message: "Name, email, and password are required" },
+                { message: errorMessages },
                 { status: 400 }
             );
         }
 
+        const { name, email, password, currency } = validationResult.data;
         const existingUser = await db
             .select()
             .from(users)

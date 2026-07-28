@@ -11,6 +11,7 @@ import Spinner from "@/components/Spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { requestPasswordReset, verifyPasswordResetOtp } from "@/services/auth";
 
 const emailSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -39,13 +40,14 @@ export default function ForgotPassword() {
   const onSubmitEmail = async (data: EmailFormData) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await requestPasswordReset(data.email);
       setUserEmail(data.email);
       setStep("OTP");
       setCountdown(60);
       toast.success("OTP code has been sent!");
-    } catch (error) {
-      toast.error("Failed to send OTP");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send OTP";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -77,10 +79,12 @@ export default function ForgotPassword() {
   const verifyOtp = async (otpCode: string) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await verifyPasswordResetOtp(userEmail, otpCode);
       setStep("SUCCESS");
-    } catch (error) {
-      toast.error("Wrong OTP code");
+      toast.success("Verification Successful!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Wrong OTP code";
+      toast.error(message);
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -90,13 +94,14 @@ export default function ForgotPassword() {
 
   const handleResendOtp = async () => {
     if (!canResend) return;
-
     setCountdown(60);
-
     try {
-      toast.success("New OTP code has been sent!");
-    } catch (error) {
-      toast.error("Failed to resend OTP");
+      await requestPasswordReset(userEmail);
+      toast.success("New OTP code has been resent!");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to resend OTP";
+      toast.error(message);
       setCountdown(0);
     }
   };

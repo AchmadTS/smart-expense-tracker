@@ -1,6 +1,6 @@
 "use client";
 
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Tooltip } from "recharts";
 import { formatCurrency } from "@/utils/format";
 
 const GRADIENTS = [
@@ -40,7 +40,7 @@ export default function CategoryBreakdownChart({
     return {
       name: d.category_name,
       value: Number(d.total) || 0,
-      gradientId: g.id,
+      fill: `url(#${g.id})`,
       solid: g.solid,
     };
   });
@@ -72,11 +72,7 @@ export default function CategoryBreakdownChart({
               paddingAngle={2}
               dataKey="value"
               stroke="none"
-            >
-              {formatted.map((entry) => (
-                <Cell key={entry.name} fill={`url(#${entry.gradientId})`} />
-              ))}
-            </Pie>
+            />
             <Tooltip
               contentStyle={{
                 borderRadius: 12,

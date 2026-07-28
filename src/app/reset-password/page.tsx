@@ -97,7 +97,6 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen flex bg-white">
       <div className="flex-1 flex flex-col px-6 sm:px-10 lg:px-14 py-8 order-1">
-        {/* Header / Logo */}
         <div className="flex justify-start items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center">
             <Wallet size={18} className="text-white" />
@@ -115,19 +114,18 @@ export default function ResetPassword() {
             className="w-full max-w-md"
           >
             <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">
-              Buat Password Baru
+              Create New Password
             </h2>
             <p className="text-slate-500 mb-10">
-              Password baru Anda harus unik dan berbeda dari password
-              sebelumnya.
+              Your new password must be unique and different from your previous
+              password.
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* INPUT: PASSWORD BARU */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-slate-700">
-                    Password Baru
+                    New Password
                   </label>
                   {passwordStrength < 4 && (
                     <button
@@ -180,10 +178,10 @@ export default function ResetPassword() {
                     </div>
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-500">
-                        {passwordStrength <= 1 && "Password lemah"}
-                        {passwordStrength === 2 && "Password lumayan"}
-                        {passwordStrength === 3 && "Password bagus"}
-                        {passwordStrength === 4 && "Password sangat kuat ✨"}
+                        {passwordStrength <= 1 && "Weak password"}
+                        {passwordStrength === 2 && "Fair password"}
+                        {passwordStrength === 3 && "Good password"}
+                        {passwordStrength === 4 && "Strong password ✨"}
                       </span>
                     </div>
                   </div>
@@ -192,7 +190,7 @@ export default function ResetPassword() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
-                  Konfirmasi Password
+                  Confirm Password
                 </label>
                 <div className="relative">
                   <input
@@ -233,10 +231,10 @@ export default function ResetPassword() {
                 {loading ? (
                   <>
                     <Spinner size="sm" />
-                    Menyimpan...
+                    Keep...
                   </>
                 ) : (
-                  "Simpan Password Baru"
+                  "Save New Password"
                 )}
               </button>
             </form>
@@ -247,7 +245,7 @@ export default function ResetPassword() {
                 className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition"
               >
                 <ArrowLeft size={16} />
-                Kembali ke Login
+                Back to Login
               </Link>
             </div>
           </motion.div>
@@ -266,8 +264,8 @@ export default function ResetPassword() {
 
       <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] order-2">
         <AuthHero
-          headline="Terlindungi"
-          subheadline="Keamanan data adalah prioritas kami"
+          headline="Protected"
+          subheadline="Data security is our priority"
         />
       </div>
     </div>

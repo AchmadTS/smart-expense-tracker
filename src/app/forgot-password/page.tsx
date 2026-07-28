@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const emailSchema = z.object({
-  email: z.string().email("Format email tidak valid"),
+  email: z.string().email("Invalid email format"),
 });
 
 type EmailFormData = z.infer<typeof emailSchema>;
@@ -43,9 +43,9 @@ export default function ForgotPassword() {
       setUserEmail(data.email);
       setStep("OTP");
       setCountdown(60);
-      toast.success("Kode OTP telah dikirim!");
+      toast.success("OTP code has been sent!");
     } catch (error) {
-      toast.error("Gagal mengirim OTP");
+      toast.error("Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -94,9 +94,9 @@ export default function ForgotPassword() {
     setCountdown(60);
 
     try {
-      toast.success("Kode OTP baru telah dikirim!");
+      toast.success("New OTP code has been sent!");
     } catch (error) {
-      toast.error("Gagal mengirim ulang OTP");
+      toast.error("Failed to resend OTP");
       setCountdown(0);
     }
   };
@@ -149,14 +149,14 @@ export default function ForgotPassword() {
                     className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition mb-8"
                   >
                     <ArrowLeft size={16} />
-                    Kembali ke Login
+                    Back to Login
                   </Link>
 
                   <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">
-                    Lupa Password?
+                    Forgot Password?
                   </h2>
                   <p className="text-slate-500 mb-10">
-                    Masukkan email kamu untuk mendapatkan kode verifikasi.
+                    Enter your email to get a verification code.
                   </p>
 
                   <form
@@ -194,10 +194,10 @@ export default function ForgotPassword() {
                       {loading ? (
                         <>
                           <Spinner size="sm" />
-                          Mengirim OTP...
+                          Send OTP...
                         </>
                       ) : (
-                        "Kirim Kode OTP"
+                        "Send OTP"
                       )}
                     </button>
                   </form>
@@ -214,14 +214,14 @@ export default function ForgotPassword() {
                   className="flex flex-col items-center text-center"
                 >
                   <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
-                    Verifikasi Email
+                    Email Verification
                   </h2>
                   <p className="text-slate-500 text-sm mb-10 max-w-sm">
-                    Kami telah mengirimkan 6-digit kode ke email{" "}
+                    We&apos;ve sent a 6-digit code to{" "}
                     <span className="font-semibold text-slate-700">
                       {userEmail}
                     </span>
-                    . Kode akan otomatis diverifikasi.
+                    . The code will be automatically verified.
                   </p>
 
                   <div className="flex items-center justify-center gap-2.5 sm:gap-4 mb-8">
@@ -250,24 +250,24 @@ export default function ForgotPassword() {
                     {loading && (
                       <div className="flex items-center gap-2 text-sm text-teal-600 font-medium">
                         <Spinner size="sm" />
-                        Verifikasi kode...
+                        Verify code...
                       </div>
                     )}
                   </div>
 
                   <p className="text-sm text-slate-500 mt-8">
-                    Tidak menerima kode?{" "}
+                    Didn&apos;t receive the code?{" "}
                     {canResend ? (
                       <button
                         type="button"
                         onClick={handleResendOtp}
                         className="text-teal-600 font-semibold hover:text-teal-700 transition cursor-pointer"
                       >
-                        Kirim ulang
+                        Resend
                       </button>
                     ) : (
                       <span className="text-slate-400 font-medium">
-                        Kirim ulang dalam {countdown}s
+                        Resend in {countdown}s
                       </span>
                     )}
                   </p>
@@ -328,7 +328,7 @@ export default function ForgotPassword() {
                     transition={{ delay: 0.6, duration: 0.4 }}
                     className="text-3xl font-bold text-slate-900 tracking-tight mb-2"
                   >
-                    Verifikasi Berhasil
+                    Verification Successful
                   </motion.h2>
 
                   <motion.p
@@ -337,8 +337,8 @@ export default function ForgotPassword() {
                     transition={{ delay: 0.7, duration: 0.4 }}
                     className="text-slate-500 mb-10 max-w-xs"
                   >
-                    Akun Anda telah berhasil diverifikasi. Silakan atur password
-                    baru.
+                    Your account has been successfully verified. Please set a
+                    new password.
                   </motion.p>
 
                   <motion.button
@@ -348,7 +348,7 @@ export default function ForgotPassword() {
                     onClick={() => router.push("/reset-password")}
                     className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
                   >
-                    Buat Password Baru
+                    Create New Password
                   </motion.button>
                 </motion.div>
               )}

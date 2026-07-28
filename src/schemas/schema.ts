@@ -85,3 +85,13 @@ export const ai_insights = pgTable(
         ),
     ]
 );
+
+export const passwordResets = pgTable(
+    "password_resets",
+    {
+        userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+        otp: varchar("otp", { length: 6 }).notNull(),
+        expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    }
+);

@@ -12,7 +12,11 @@ import Spinner from "@/components/Spinner";
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    rememberMe: false,
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -35,7 +39,7 @@ export default function Login() {
     <div className="min-h-screen flex bg-white">
       <div className="flex-1 flex flex-col px-6 sm:px-10 lg:px-14 py-8 order-1">
         <div className="flex justify-start items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-primary-light to-primary flex items-center justify-center">
+          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center">
             <Wallet size={18} className="text-white" />
           </div>
           <span className="font-bold text-xl text-slate-900">
@@ -60,7 +64,7 @@ export default function Login() {
                   required
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
+                  className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
                   placeholder="you@example.com"
                 />
               </div>
@@ -77,7 +81,7 @@ export default function Login() {
                     onChange={(e) =>
                       setForm({ ...form, password: e.target.value })
                     }
-                    className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
+                    className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
                     placeholder="••••••••"
                   />
                   <button
@@ -91,10 +95,25 @@ export default function Login() {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between text-sm pt-1">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.rememberMe}
+                    onChange={(e) =>
+                      setForm({ ...form, rememberMe: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 accent-teal-600 cursor-pointer"
+                  />
+                  <span className="text-slate-600 text-xs font-medium">
+                    Remember me
+                  </span>
+                </label>
+              </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-primary-light to-primary active:bg-primary-hover text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <>
@@ -111,7 +130,7 @@ export default function Login() {
               No Account Yet?{" "}
               <Link
                 href="/register"
-                className="text-primary font-semibold hover:text-primary-hover transition"
+                className="text-teal-600 font-semibold hover:text-teal-700 transition"
               >
                 Get Yours Now
               </Link>

@@ -467,7 +467,7 @@ export default function AuthHero({ headline, subheadline }: AuthHeroProps) {
         </div>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 h-64 bg-linear-to-b from-violet-100 via-primary-subtle/95 to-transparent pointer-events-none z-20" />
+      <div className="absolute top-0 left-0 right-0 h-64 bg-linear-to-b from-violet-100 via-violet-50/90 to-transparent pointer-events-none z-20" />
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-white via-white/70 to-transparent pointer-events-none z-20" />
       <div className="absolute top-10 left-10 xl:top-14 xl:left-14 z-30 max-w-[70%]">
         <h1 className="text-5xl xl:text-6xl font-normal tracking-tight text-slate-900 mb-2">

@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:push": "drizzle-kit push --config=drizzle.config.ts --force",
     "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
-    "db:fresh": "drizzle-kit push --config=drizzle.empty.config.ts --force && drizzle-kit push --config=drizzle.config.ts --force"
+    "db:fresh": "drizzle-kit push --config=drizzle.empty.config.ts --force && drizzle-kit push --config=drizzle.config.ts --force",
+    "db:seed": "tsx --env-file=.env src/lib/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

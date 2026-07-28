@@ -8,8 +8,8 @@ import {
   Target,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { transactions, budgets } from "@/schemas/schema";
-import { desc } from "drizzle-orm";
+import { transactions, budgets, categories } from "@/schemas/schema";
+import { desc, eq, sum } from "drizzle-orm";
 import { formatCurrency, formatDate } from "@/utils/format";
 import KpiCard from "@/components/KpiCard";
 import CategoryBadge from "@/components/CategoryBadge";
@@ -21,46 +21,83 @@ export default async function DashboardPage() {
   const currency = "IDR";
   let recentTransactions: DashboardTransaction[] = [];
   let userBudgets: DashboardBudget[] = [];
+  let summary = {
+    balance: 0,
+    incomeThisMonth: 0,
+    expenseThisMonth: 0,
+    incomeDelta: 0,
+    expenseDelta: 0,
+    savingsRate: 0,
+  };
 
   try {
     const rawTransactions = await db
-      .select()
+      .select({
+        id: transactions.id,
+        description: transactions.description,
+        categoryName: categories.name,
+        categoryIcon: categories.icon,
+        categoryColor: categories.color,
+        createdAt: transactions.createdAt,
+        transactionDate: transactions.transactionDate,
+        type: transactions.type,
+        amount: transactions.amount,
+      })
       .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
 
     recentTransactions = rawTransactions.map((t) => ({
-      id: t.id,
-      description: t.description,
-      categoryName: "Umum",
-      categoryIcon: "wallet",
-      categoryColor: "#059669",
-      createdAt: t.createdAt,
-      transactionDate: t.transactionDate,
-      type: t.type,
-      amount: t.amount,
+      ...t,
+      categoryName: t.categoryName || "Umum",
+      categoryIcon: t.categoryIcon || "wallet",
+      categoryColor: t.categoryColor || "#059669",
     }));
 
-    const rawBudgets = await db.select().from(budgets);
+    const rawBudgets = await db
+      .select({
+        id: budgets.id,
+        categoryName: categories.name,
+        amount: budgets.amount,
+      })
+      .from(budgets)
+      .leftJoin(categories, eq(budgets.categoryId, categories.id));
 
     userBudgets = rawBudgets.map((b) => ({
       id: b.id,
-      categoryName: `Kategori #${b.categoryId}`,
+      categoryName: b.categoryName || "Kategori",
       amount: b.amount,
       spent: "0",
     }));
+
+    const [incomeResult] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(eq(transactions.type, "income"));
+
+    const [expenseResult] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(eq(transactions.type, "expense"));
+
+    const totalIncome = parseFloat(incomeResult?.total || "0");
+    const totalExpense = parseFloat(expenseResult?.total || "0");
+    const balance = totalIncome - totalExpense;
+    const savingsRate =
+      totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+
+    summary = {
+      balance,
+      incomeThisMonth: totalIncome,
+      expenseThisMonth: totalExpense,
+      incomeDelta: 0,
+      expenseDelta: 0,
+      savingsRate: Math.max(savingsRate, 0),
+    };
   } catch (error) {
     console.error("Database query error:", error);
   }
-
-  const summary = {
-    balance: 12500000,
-    incomeThisMonth: 5000000,
-    expenseThisMonth: 2100000,
-    incomeDelta: 12,
-    expenseDelta: -5,
-    savingsRate: 58.2,
-  };
 
   const totalSpent = userBudgets.reduce(
     (sum, b) => sum + parseFloat(b.spent || "0"),

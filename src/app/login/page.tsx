@@ -12,11 +12,20 @@ import Spinner from "@/components/Spinner";
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    rememberMe: false,
+
+  const [form, setForm] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedEmail = localStorage.getItem("remembered_email") || "";
+      const savedPassword = localStorage.getItem("remembered_password") || "";
+      return {
+        email: savedEmail,
+        password: savedPassword,
+        rememberMe: !!savedEmail,
+      };
+    }
+    return { email: "", password: "", rememberMe: false };
   });
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -25,6 +34,15 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
+
+      if (form.rememberMe) {
+        localStorage.setItem("remembered_email", form.email);
+        localStorage.setItem("remembered_password", form.password);
+      } else {
+        localStorage.removeItem("remembered_email");
+        localStorage.removeItem("remembered_password");
+      }
+
       toast.success("Welcome back!");
       router.push("/");
     } catch (err: unknown) {

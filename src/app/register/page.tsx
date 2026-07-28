@@ -8,6 +8,9 @@ import { Wallet, Eye, EyeOff, ChevronDown, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AuthHero from "@/components/AuthHero";
 import Spinner from "@/components/Spinner";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 const CURRENCIES = [
   { value: "IDR", label: "IDR - Indonesian Rupiah" },
@@ -20,17 +23,43 @@ const CURRENCIES = [
   { value: "AUD", label: "AUD - Australian Dollar" },
 ];
 
+const registerSchema = z.object({
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+  email: z.string().email("Format email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  currency: z.string().min(1, "Pilih mata uang"),
+});
+
+type RegisterFormData = z.infer<typeof registerSchema>;
+
 export default function Register() {
-  const { register } = useAuth();
+  const { register: registerAuth } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    currency: "IDR",
-  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      currency: "IDR",
+    },
+  });
+
+  const passwordValue =
+    useWatch({
+      control,
+      name: "password",
+    }) || "";
+
   const getPasswordStrength = (pwd: string) => {
     let score = 0;
     if (!pwd) return 0;
@@ -41,7 +70,7 @@ export default function Register() {
     return score;
   };
 
-  const passwordStrength = getPasswordStrength(form.password);
+  const passwordStrength = getPasswordStrength(passwordValue);
   const handleGeneratePassword = () => {
     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const lowercase = "abcdefghijklmnopqrstuvwxyz";
@@ -60,16 +89,15 @@ export default function Register() {
     }
 
     const generated = chars.sort(() => Math.random() - 0.5).join("");
-    setForm({ ...form, password: generated });
+    setValue("password", generated, { shouldValidate: true });
     setShowPassword(true);
     toast.success("Strong password generated!");
   };
 
-  const onSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: RegisterFormData) => {
     setLoading(true);
     try {
-      await register(form);
+      await registerAuth(data);
       toast.success("Account created!");
       router.push("/");
     } catch (err: unknown) {
@@ -102,18 +130,21 @@ export default function Register() {
               Create your account in seconds
             </p>
 
-            <form onSubmit={onSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
                   Name
                 </label>
                 <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  {...register("name")}
                   className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
                   placeholder="Achmad Tirto Sudiro"
                 />
+                {errors.name && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -122,12 +153,15 @@ export default function Register() {
                 </label>
                 <input
                   type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  {...register("email")}
                   className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
                   placeholder="your_email@example.com"
                 />
+                {errors.email && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -149,12 +183,7 @@ export default function Register() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
-                    minLength={6}
-                    value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    {...register("password")}
                     className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
                     placeholder="At least 6 characters"
                   />
@@ -167,8 +196,13 @@ export default function Register() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.password.message}
+                  </p>
+                )}
 
-                {form.password && (
+                {passwordValue && (
                   <div className="space-y-1.5 pt-1">
                     <div className="grid grid-cols-4 gap-1.5 h-1.5">
                       <div
@@ -210,10 +244,7 @@ export default function Register() {
                 </label>
                 <div className="relative">
                   <select
-                    value={form.currency}
-                    onChange={(e) =>
-                      setForm({ ...form, currency: e.target.value })
-                    }
+                    {...register("currency")}
                     className="w-full appearance-none bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition cursor-pointer"
                   >
                     {CURRENCIES.map((c) => (
@@ -227,6 +258,11 @@ export default function Register() {
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                   />
                 </div>
+                {errors.currency && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.currency.message}
+                  </p>
+                )}
               </div>
 
               <button

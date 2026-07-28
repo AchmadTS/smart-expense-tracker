@@ -26,6 +26,8 @@ export default function ForgotPassword() {
   const [userEmail, setUserEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [countdown, setCountdown] = useState(60);
+  const canResend = countdown === 0;
   const {
     register,
     handleSubmit,
@@ -40,6 +42,7 @@ export default function ForgotPassword() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setUserEmail(data.email);
       setStep("OTP");
+      setCountdown(60);
       toast.success("Kode OTP telah dikirim!");
     } catch (error) {
       toast.error("Gagal mengirim OTP");
@@ -85,11 +88,38 @@ export default function ForgotPassword() {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (!canResend) return;
+
+    setCountdown(60);
+
+    try {
+      toast.success("Kode OTP baru telah dikirim!");
+    } catch (error) {
+      toast.error("Gagal mengirim ulang OTP");
+      setCountdown(0);
+    }
+  };
+
   useEffect(() => {
     if (step === "OTP") {
       inputRefs.current[0]?.focus();
     }
   }, [step]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (step === "OTP" && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [step, countdown]);
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -227,12 +257,19 @@ export default function ForgotPassword() {
 
                   <p className="text-sm text-slate-500 mt-8">
                     Tidak menerima kode?{" "}
-                    <button
-                      type="button"
-                      className="text-teal-600 font-semibold hover:text-teal-700 transition cursor-pointer"
-                    >
-                      Kirim ulang
-                    </button>
+                    {canResend ? (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        className="text-teal-600 font-semibold hover:text-teal-700 transition cursor-pointer"
+                      >
+                        Kirim ulang
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 font-medium">
+                        Kirim ulang dalam {countdown}s
+                      </span>
+                    )}
                   </p>
                 </motion.div>
               )}

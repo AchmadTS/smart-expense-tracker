@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -8,36 +8,59 @@ import { Wallet, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AuthHero from "@/components/AuthHero";
 import Spinner from "@/components/Spinner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email("Format email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  rememberMe: z.boolean().optional(),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const [form, setForm] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedEmail = localStorage.getItem("remembered_email") || "";
-      const savedPassword = localStorage.getItem("remembered_password") || "";
-      return {
-        email: savedEmail,
-        password: savedPassword,
-        rememberMe: !!savedEmail,
-      };
-    }
-    return { email: "", password: "", rememberMe: false };
-  });
-
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const onSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
+  });
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("remembered_email") || "";
+    const savedPassword = localStorage.getItem("remembered_password") || "";
+
+    if (savedEmail || savedPassword) {
+      reset({
+        email: savedEmail,
+        password: savedPassword,
+        rememberMe: true,
+      });
+    }
+  }, [reset]);
+
+  const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
     try {
-      await login(form.email, form.password);
-
-      if (form.rememberMe) {
-        localStorage.setItem("remembered_email", form.email);
-        localStorage.setItem("remembered_password", form.password);
+      await login(data.email, data.password);
+      if (data.rememberMe) {
+        localStorage.setItem("remembered_email", data.email);
+        localStorage.setItem("remembered_password", data.password);
       } else {
         localStorage.removeItem("remembered_email");
         localStorage.removeItem("remembered_password");
@@ -72,19 +95,22 @@ export default function Login() {
             </h2>
             <p className="text-slate-500 mb-10">Please login to continue</p>
 
-            <form onSubmit={onSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
                   Email
                 </label>
                 <input
                   type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  {...register("email")}
                   className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
                   placeholder="you@example.com"
                 />
+                {errors.email && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -94,11 +120,7 @@ export default function Login() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
-                    value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    {...register("password")}
                     className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
                     placeholder="••••••••"
                   />
@@ -111,16 +133,18 @@ export default function Login() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-xs text-rose-500 mt-1 pl-1">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-sm pt-1">
                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    checked={form.rememberMe}
-                    onChange={(e) =>
-                      setForm({ ...form, rememberMe: e.target.checked })
-                    }
+                    {...register("rememberMe")}
                     className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 accent-teal-600 cursor-pointer"
                   />
                   <span className="text-slate-600 text-xs font-medium">

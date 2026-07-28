@@ -35,10 +35,12 @@ export default function Login() {
     <div className="min-h-screen flex bg-white">
       <div className="flex-1 flex flex-col px-6 sm:px-10 lg:px-14 py-8 order-1">
         <div className="flex justify-start items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-violet-400 to-violet-600 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-primary-light to-primary flex items-center justify-center">
             <Wallet size={18} className="text-white" />
           </div>
-          <span className="font-bold text-xl text-slate-900">Smart Expense</span>
+          <span className="font-bold text-xl text-slate-900">
+            Smart Expense
+          </span>
         </div>
 
         <div className="flex-1 flex items-center justify-center py-10">
@@ -58,7 +60,7 @@ export default function Login() {
                   required
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-violet-500 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
+                  className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
                   placeholder="you@example.com"
                 />
               </div>
@@ -75,7 +77,7 @@ export default function Login() {
                     onChange={(e) =>
                       setForm({ ...form, password: e.target.value })
                     }
-                    className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-violet-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
+                    className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
                     placeholder="••••••••"
                   />
                   <button
@@ -92,7 +94,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-violet-400 to-violet-600 active:bg-violet-800 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-violet-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-primary-light to-primary active:bg-primary-hover text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -109,7 +111,7 @@ export default function Login() {
               No Account Yet?{" "}
               <Link
                 href="/register"
-                className="text-violet-600 font-semibold hover:text-violet-700 transition"
+                className="text-primary font-semibold hover:text-primary-hover transition"
               >
                 Get Yours Now
               </Link>

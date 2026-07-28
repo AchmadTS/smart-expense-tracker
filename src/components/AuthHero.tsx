@@ -38,7 +38,7 @@ interface Category {
 }
 
 const BalanceCard = () => (
-  <div className="bg-linear-to-br from-primary via-primary-hover to-violet-900 rounded-2xl p-5 text-white shadow-xl shadow-violet-300/40 relative overflow-hidden">
+  <div className="bg-linear-to-br from-primary via-primary-hover to-teal-950 rounded-2xl p-5 text-white shadow-xl shadow-teal-900/20 relative overflow-hidden">
     <div className="absolute -top-8 -right-8 h-24 w-24 bg-white/10 rounded-full blur-2xl" />
     <div className="relative flex items-center justify-between mb-4">
       <div className="text-xs font-medium opacity-80">Total Balance</div>
@@ -54,7 +54,7 @@ const BalanceCard = () => (
 );
 
 const AIInsightCard = () => (
-  <div className="bg-white rounded-2xl p-4 shadow-lg shadow-violet-100 border border-card-border">
+  <div className="bg-white rounded-2xl p-4 shadow-lg shadow-teal-50 border border-card-border">
     <div className="flex items-start gap-2.5">
       <div className="h-9 w-9 rounded-xl bg-linear-to-br from-primary-light to-primary flex items-center justify-center shrink-0">
         <Sparkles size={16} className="text-white" />
@@ -428,8 +428,8 @@ const column2 = [
 
 export default function AuthHero({ headline, subheadline }: AuthHeroProps) {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-linear-to-br from-violet-100 via-primary-subtle to-white">
-      <div className="absolute top-1/2 -right-24 w-80 h-80 bg-pink-200/30 rounded-full blur-3xl pointer-events-none z-0" />
+    <div className="relative h-full w-full overflow-hidden bg-linear-to-br from-teal-100 via-primary-subtle to-white">
+      <div className="absolute top-1/2 -right-24 w-80 h-80 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute inset-0 overflow-hidden z-10">
         <div
           className="absolute -inset-40 flex gap-4"
@@ -467,13 +467,13 @@ export default function AuthHero({ headline, subheadline }: AuthHeroProps) {
         </div>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 h-64 bg-linear-to-b from-violet-100 via-violet-50/90 to-transparent pointer-events-none z-20" />
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-white via-white/70 to-transparent pointer-events-none z-20" />
+      <div className="absolute top-0 left-0 right-0 h-64 bg-linear-to-b from-teal-100 via-teal-50/95 to-transparent pointer-events-none z-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-white via-white/80 to-transparent pointer-events-none z-20" />
       <div className="absolute top-10 left-10 xl:top-14 xl:left-14 z-30 max-w-[70%]">
-        <h1 className="text-5xl xl:text-6xl font-normal tracking-tight text-slate-900 mb-2">
+        <h1 className="text-5xl xl:text-6xl font-semibold tracking-tight text-teal-950 mb-2">
           {headline}
         </h1>
-        <p className="text-base text-slate-600">{subheadline}</p>
+        <p className="text-base text-teal-800 font-medium">{subheadline}</p>
       </div>
     </div>
   );

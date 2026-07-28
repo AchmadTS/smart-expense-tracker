@@ -5,6 +5,15 @@ import { users, passwordResets } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
 
 export async function requestPasswordReset(email: string) {
     const [user] = await db
@@ -37,7 +46,33 @@ export async function requestPasswordReset(email: string) {
             },
         });
 
-    console.log(`[DEV OTP] Kode untuk ${email}: ${otp}`);
+    try {
+        await transporter.sendMail({
+            from: `"Smart Expense" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Password Reset Code - Smart Expense",
+            html: `
+                <div style="font-family: sans-serif; max-w: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+                    <h2 style="color: #0f172a;">Reset Password</h2>
+                    <p style="color: #475569;">Hello ${user.name},</p>
+                    <p style="color: #475569;">We received a request to reset the password for your Smart Expense account. Here is your OTP code:</p>
+                    
+                    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                        <h1 style="color: #0d9488; margin: 0; letter-spacing: 5px; font-size: 32px;">${otp}</h1>
+                    </div>
+                    
+                    <p style="color: #ef4444; font-size: 14px;"><strong>Note:</strong> This code is only valid for 1 minute.</p>
+                    <p style="color: #475569; font-size: 14px;">If you didn't request a password reset, you can safely ignore this email.</p>
+                </div>
+            `,
+        });
+
+        console.log(`[DEV OTP] Email sukses terkirim ke ${email}: ${otp}`);
+    } catch (error) {
+        console.error("Gagal mengirim email OTP via Nodemailer:", error);
+        throw new Error("Failed to send OTP email. Please check server logs.");
+    }
+
     return { success: true, message: "OTP code has been sent!" };
 }
 

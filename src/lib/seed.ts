@@ -59,6 +59,31 @@ async function main() {
         {
             userId: user.id,
             categoryId: salaryCat.id,
+            amount: "8000000.00",
+            type: "income",
+            description: "Gaji Juni",
+            transactionDate: "2026-06-01",
+        },
+        {
+            userId: user.id,
+            categoryId: foodCat.id,
+            amount: "1200000.00",
+            type: "expense",
+            description: "Makan Bulan Juni",
+            transactionDate: "2026-06-12",
+        },
+        {
+            userId: user.id,
+            categoryId: transportCat.id,
+            amount: "400000.00",
+            type: "expense",
+            description: "Transport Juni",
+            transactionDate: "2026-06-20",
+        },
+
+        {
+            userId: user.id,
+            categoryId: salaryCat.id,
             amount: "10000000.00",
             type: "income",
             description: "Gaji Bulanan",
@@ -67,41 +92,41 @@ async function main() {
         {
             userId: user.id,
             categoryId: foodCat.id,
-            amount: "75000.00",
+            amount: "1500000.00",
             type: "expense",
-            description: "Makan Siang",
-            transactionDate: "2026-07-25",
+            description: "Makan Siang & Resto",
+            transactionDate: "2026-07-10",
         },
         {
             userId: user.id,
             categoryId: transportCat.id,
-            amount: "50000.00",
+            amount: "450000.00",
             type: "expense",
-            description: "Bensin",
-            transactionDate: "2026-07-26",
+            description: "Bensin & Parkir",
+            transactionDate: "2026-07-15",
         },
     ]);
 
-    console.log("Created sample transactions.");
+    console.log("Created transactions.");
 
     await db.insert(budgets).values([
         {
             userId: user.id,
             categoryId: foodCat.id,
-            amount: "1500000.00",
+            amount: "2000000.00",
             period: "monthly",
             startDate: "2026-07-01",
         },
         {
             userId: user.id,
             categoryId: transportCat.id,
-            amount: "500000.00",
+            amount: "600000.00",
             period: "monthly",
             startDate: "2026-07-01",
         },
     ]);
 
-    console.log("Created sample budgets.");
+    console.log("Created budgets.");
     console.log("✅ Seeding completed successfully!");
 }
 

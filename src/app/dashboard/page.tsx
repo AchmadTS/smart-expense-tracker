@@ -9,8 +9,9 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { transactions, budgets, categories } from "@/schemas/schema";
-import { desc, eq, sum } from "drizzle-orm";
+import { desc, eq, and, sum, sql } from "drizzle-orm";
 import { formatCurrency, formatDate } from "@/utils/format";
+import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 import KpiCard from "@/components/KpiCard";
 import CategoryBadge from "@/components/CategoryBadge";
 import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
@@ -31,6 +32,12 @@ export default async function DashboardPage() {
   };
 
   try {
+    const now = new Date();
+    const currentMonthStart = format(startOfMonth(now), "yyyy-MM-dd");
+    const currentMonthEnd = format(endOfMonth(now), "yyyy-MM-dd");
+    const lastMonth = subMonths(now, 1);
+    const lastMonthStart = format(startOfMonth(lastMonth), "yyyy-MM-dd");
+    const lastMonthEnd = format(endOfMonth(lastMonth), "yyyy-MM-dd");
     const rawTransactions = await db
       .select({
         id: transactions.id,
@@ -55,56 +62,132 @@ export default async function DashboardPage() {
       categoryColor: t.categoryColor || "#059669",
     }));
 
+    const [incomeCurrentRes] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.type, "income"),
+          sql`${transactions.transactionDate} >= ${currentMonthStart}`,
+          sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
+        ),
+      );
+
+    const [expenseCurrentRes] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.type, "expense"),
+          sql`${transactions.transactionDate} >= ${currentMonthStart}`,
+          sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
+        ),
+      );
+
+    const [incomeLastRes] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.type, "income"),
+          sql`${transactions.transactionDate} >= ${lastMonthStart}`,
+          sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
+        ),
+      );
+
+    const [expenseLastRes] = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.type, "expense"),
+          sql`${transactions.transactionDate} >= ${lastMonthStart}`,
+          sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
+        ),
+      );
+
+    const incomeThisMonth = parseFloat(incomeCurrentRes?.total || "0");
+    const expenseThisMonth = parseFloat(expenseCurrentRes?.total || "0");
+    const incomeLastMonth = parseFloat(incomeLastRes?.total || "0");
+    const expenseLastMonth = parseFloat(expenseLastRes?.total || "0");
+    const balance = incomeThisMonth - expenseThisMonth;
+    const savingsRate =
+      incomeThisMonth > 0
+        ? ((incomeThisMonth - expenseThisMonth) / incomeThisMonth) * 100
+        : 0;
+
+    const incomeDelta =
+      incomeLastMonth > 0
+        ? Math.round(
+            ((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100,
+          )
+        : incomeThisMonth > 0
+          ? 100
+          : 0;
+
+    const expenseDelta =
+      expenseLastMonth > 0
+        ? Math.round(
+            ((expenseThisMonth - expenseLastMonth) / expenseLastMonth) * 100,
+          )
+        : expenseThisMonth > 0
+          ? 100
+          : 0;
+
+    summary = {
+      balance,
+      incomeThisMonth,
+      expenseThisMonth,
+      incomeDelta,
+      expenseDelta,
+      savingsRate: Math.max(savingsRate, 0),
+    };
+
     const rawBudgets = await db
       .select({
         id: budgets.id,
+        categoryId: budgets.categoryId,
         categoryName: categories.name,
         amount: budgets.amount,
       })
       .from(budgets)
       .leftJoin(categories, eq(budgets.categoryId, categories.id));
 
+    const categoryExpenses = await db
+      .select({
+        categoryId: transactions.categoryId,
+        totalSpent: sum(transactions.amount),
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.type, "expense"),
+          sql`${transactions.transactionDate} >= ${currentMonthStart}`,
+          sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
+        ),
+      )
+      .groupBy(transactions.categoryId);
+
+    const expenseMap = new Map(
+      categoryExpenses.map((item) => [item.categoryId, item.totalSpent || "0"]),
+    );
+
     userBudgets = rawBudgets.map((b) => ({
       id: b.id,
       categoryName: b.categoryName || "Kategori",
       amount: b.amount,
-      spent: "0",
+      spent: expenseMap.get(b.categoryId) || "0",
     }));
-
-    const [incomeResult] = await db
-      .select({ total: sum(transactions.amount) })
-      .from(transactions)
-      .where(eq(transactions.type, "income"));
-
-    const [expenseResult] = await db
-      .select({ total: sum(transactions.amount) })
-      .from(transactions)
-      .where(eq(transactions.type, "expense"));
-
-    const totalIncome = parseFloat(incomeResult?.total || "0");
-    const totalExpense = parseFloat(expenseResult?.total || "0");
-    const balance = totalIncome - totalExpense;
-    const savingsRate =
-      totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
-
-    summary = {
-      balance,
-      incomeThisMonth: totalIncome,
-      expenseThisMonth: totalExpense,
-      incomeDelta: 0,
-      expenseDelta: 0,
-      savingsRate: Math.max(savingsRate, 0),
-    };
   } catch (error) {
     console.error("Database query error:", error);
   }
 
   const totalSpent = userBudgets.reduce(
-    (sum, b) => sum + parseFloat(b.spent || "0"),
+    (sumVal, b) => sumVal + parseFloat(b.spent || "0"),
     0,
   );
   const totalBudget = userBudgets.reduce(
-    (sum, b) => sum + parseFloat(b.amount || "0"),
+    (sumVal, b) => sumVal + parseFloat(b.amount || "0"),
     0,
   );
   const aggPct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
@@ -181,7 +264,7 @@ export default async function DashboardPage() {
               Recent Transactions
             </h2>
             <Link
-              href="/transactions"
+              href="/dashboard/transactions"
               className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
             >
               View all
@@ -237,7 +320,7 @@ export default async function DashboardPage() {
               Budget Status
             </h2>
             <Link
-              href="/budgets"
+              href="/dashboard/budgets"
               className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
             >
               View all
@@ -254,7 +337,7 @@ export default async function DashboardPage() {
                 No budgets yet
               </p>
               <Link
-                href="/budgets"
+                href="/dashboard/budgets"
                 className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
               >
                 Create one →

@@ -66,7 +66,7 @@ export const budgets = pgTable(
     ]
 );
 
-export const aiInsights = pgTable(
+export const ai_insights = pgTable(
     "ai_insights",
     {
         id: serial("id").primaryKey(),
@@ -78,6 +78,7 @@ export const aiInsights = pgTable(
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     },
     (table) => [
+        unique().on(table.userId, table.insightType),
         index("idx_insights_user_created").on(
             table.userId,
             sql`${table.createdAt} DESC`

@@ -22,12 +22,13 @@ type Step = "EMAIL" | "OTP" | "SUCCESS";
 
 export default function ForgotPassword() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const [step, setStep] = useState<Step>("EMAIL");
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(0);
   const canResend = countdown === 0;
   const {
     register,
@@ -37,10 +38,43 @@ export default function ForgotPassword() {
     resolver: zodResolver(emailSchema),
   });
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const savedStep = localStorage.getItem("forgot_step") as Step;
+      const savedEmail = localStorage.getItem("forgot_email");
+      const savedExpiry = localStorage.getItem("otp_resend_expiry");
+
+      if (savedStep && savedStep !== "EMAIL" && savedEmail) {
+        setStep(savedStep);
+        setUserEmail(savedEmail);
+      }
+
+      if (savedExpiry) {
+        const remaining = Math.floor(
+          (parseInt(savedExpiry) - new Date().getTime()) / 1000,
+        );
+        if (remaining > 0) {
+          setCountdown(remaining);
+        }
+      }
+
+      setIsMounted(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const onSubmitEmail = async (data: EmailFormData) => {
     setLoading(true);
     try {
       await requestPasswordReset(data.email);
+      localStorage.setItem("forgot_step", "OTP");
+      localStorage.setItem("forgot_email", data.email);
+      localStorage.setItem(
+        "otp_resend_expiry",
+        (new Date().getTime() + 60000).toString(),
+      );
+
       setUserEmail(data.email);
       setStep("OTP");
       setCountdown(60);
@@ -81,7 +115,8 @@ export default function ForgotPassword() {
     try {
       const res = await verifyPasswordResetOtp(userEmail, otpCode);
       localStorage.setItem("reset_token", res.token);
-      router.push(`/reset-password?token=${res.token}`);
+      localStorage.setItem("forgot_step", "SUCCESS");
+      setStep("SUCCESS");
       toast.success("Verification Successful!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Wrong OTP code";
@@ -98,18 +133,23 @@ export default function ForgotPassword() {
     setCountdown(60);
     try {
       await requestPasswordReset(userEmail);
+      localStorage.setItem(
+        "otp_resend_expiry",
+        (new Date().getTime() + 60000).toString(),
+      );
       toast.success("New OTP code has been resent!");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to resend OTP";
       toast.error(message);
       setCountdown(0);
+      localStorage.removeItem("otp_resend_expiry");
     }
   };
 
   useEffect(() => {
-    if (step === "OTP") {
-      inputRefs.current[0]?.focus();
+    if (step === "OTP" && inputRefs.current[0]) {
+      inputRefs.current[0].focus();
     }
   }, [step]);
 
@@ -118,7 +158,13 @@ export default function ForgotPassword() {
 
     if (step === "OTP" && countdown > 0) {
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            localStorage.removeItem("otp_resend_expiry");
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
     }
 
@@ -126,6 +172,14 @@ export default function ForgotPassword() {
       if (timer) clearInterval(timer);
     };
   }, [step, countdown]);
+
+  const handleClearFlow = () => {
+    localStorage.removeItem("forgot_step");
+    localStorage.removeItem("forgot_email");
+    localStorage.removeItem("otp_resend_expiry");
+  };
+
+  if (!isMounted) return null;
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -152,6 +206,7 @@ export default function ForgotPassword() {
                 >
                   <Link
                     href="/login"
+                    onClick={handleClearFlow}
                     className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition mb-8"
                   >
                     <ArrowLeft size={16} />
@@ -219,6 +274,19 @@ export default function ForgotPassword() {
                   transition={{ duration: 0.3 }}
                   className="flex flex-col items-center text-center"
                 >
+                  <div className="w-full flex justify-start mb-8">
+                    <button
+                      onClick={() => {
+                        handleClearFlow();
+                        setStep("EMAIL");
+                      }}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition"
+                    >
+                      <ArrowLeft size={16} />
+                      Change Email
+                    </button>
+                  </div>
+
                   <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
                     Email Verification
                   </h2>
@@ -351,11 +419,11 @@ export default function ForgotPassword() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9, duration: 0.4 }}
-                    onClick={() =>
-                      router.push(
-                        `/reset-password?email=${encodeURIComponent(userEmail)}`,
-                      )
-                    }
+                    onClick={() => {
+                      handleClearFlow();
+                      const token = localStorage.getItem("reset_token");
+                      router.push(`/reset-password?token=${token}`);
+                    }}
                     className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
                   >
                     Create New Password

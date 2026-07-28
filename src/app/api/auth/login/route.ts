@@ -8,8 +8,8 @@ import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
 const loginBodySchema = z.object({
-    email: z.string().email("Format email tidak valid"),
-    password: z.string().min(6, "Password minimal 6 karakter"),
+    email: z.string().email("Invalid email format"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export async function POST(request: Request) {

@@ -24,10 +24,10 @@ const CURRENCIES = [
 ];
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  email: z.string().email("Format email tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
-  currency: z.string().min(1, "Pilih mata uang"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  currency: z.string().min(1, "Select currency"),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -155,7 +155,7 @@ export default function Register() {
                   type="email"
                   {...register("email")}
                   className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-primary rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
-                  placeholder="your_email@example.com"
+                  placeholder="you@example.com"
                 />
                 {errors.email && (
                   <p className="text-xs text-rose-500 mt-1 pl-1">

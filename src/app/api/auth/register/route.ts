@@ -8,9 +8,9 @@ import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
 const registerBodySchema = z.object({
-    name: z.string().min(1, "Nama wajib diisi"),
-    email: z.string().email("Format email tidak valid"),
-    password: z.string().min(6, "Password minimal 6 karakter"),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email format"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
     currency: z.string().optional(),
 });
 

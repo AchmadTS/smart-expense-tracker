@@ -137,11 +137,11 @@ export default function Sidebar({ user }: BarProps) {
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                Keluar dari Akun?
+                Logout?
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Kamu perlu masuk kembali menggunakan email dan password untuk
-                mengakses{" "}
+                You will need to log in again using your email and password to
+                access{" "}
                 <span className="font-semibold text-slate-700">
                   {currentPageName}
                 </span>
@@ -155,7 +155,7 @@ export default function Sidebar({ user }: BarProps) {
                 onClick={() => setShowLogoutModal(false)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -163,7 +163,7 @@ export default function Sidebar({ user }: BarProps) {
                 onClick={handleLogout}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
               >
-                {isLoggingOut ? "Keluar..." : "Ya, Keluar"}
+                {isLoggingOut ? "Logout..." : "Yes, Logout"}
               </button>
             </div>
           </div>

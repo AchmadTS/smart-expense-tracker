@@ -21,7 +21,7 @@ async function main() {
         .insert(categories)
         .values({
             userId: user.id,
-            name: "Gaji",
+            name: "Salary",
             type: "income",
             icon: "briefcase",
             color: "#10B981",
@@ -33,7 +33,7 @@ async function main() {
         .insert(categories)
         .values({
             userId: user.id,
-            name: "Makanan & Minuman",
+            name: "Food & Beverages",
             type: "expense",
             icon: "utensils",
             color: "#F59E0B",
@@ -45,7 +45,7 @@ async function main() {
         .insert(categories)
         .values({
             userId: user.id,
-            name: "Transportasi",
+            name: "Transportation",
             type: "expense",
             icon: "car",
             color: "#3B82F6",
@@ -61,7 +61,7 @@ async function main() {
             categoryId: salaryCat.id,
             amount: "8000000.00",
             type: "income",
-            description: "Gaji Juni",
+            description: "June Salary",
             transactionDate: "2026-06-01",
         },
         {
@@ -69,7 +69,7 @@ async function main() {
             categoryId: foodCat.id,
             amount: "1200000.00",
             type: "expense",
-            description: "Makan Bulan Juni",
+            description: "June Meal",
             transactionDate: "2026-06-12",
         },
         {
@@ -86,7 +86,7 @@ async function main() {
             categoryId: salaryCat.id,
             amount: "10000000.00",
             type: "income",
-            description: "Gaji Bulanan",
+            description: "Monthly Salary",
             transactionDate: "2026-07-01",
         },
         {
@@ -94,7 +94,7 @@ async function main() {
             categoryId: foodCat.id,
             amount: "1500000.00",
             type: "expense",
-            description: "Makan Siang & Resto",
+            description: "Lunch & Restaurant",
             transactionDate: "2026-07-10",
         },
         {
@@ -102,7 +102,7 @@ async function main() {
             categoryId: transportCat.id,
             amount: "450000.00",
             type: "expense",
-            description: "Bensin & Parkir",
+            description: "Gasoline and Parking",
             transactionDate: "2026-07-15",
         },
     ]);

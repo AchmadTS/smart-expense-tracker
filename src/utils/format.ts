@@ -40,13 +40,13 @@ export const todayDateString = (): string => {
 export const timeAgo = (date: string | Date | null | undefined): string => {
     if (!date) return "—";
     const diffMs = Date.now() - new Date(date).getTime();
-    if (diffMs < 0) return "baru saja";
+    if (diffMs < 0) return "only just";
     const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 1) return "baru saja";
-    if (minutes < 60) return `${minutes}m lalu`;
+    if (minutes < 1) return "only just";
+    if (minutes < 60) return `${minutes}m then`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}j lalu`;
+    if (hours < 24) return `${hours}j then`;
     const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}h lalu`;
+    if (days < 30) return `${days}h then`;
     return formatDate(date);
 };

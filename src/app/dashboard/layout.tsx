@@ -39,7 +39,7 @@ export default async function DashboardLayout({
         }
       }
     } catch (error) {
-      console.error("Gagal memverifikasi token user di layout:", error);
+      console.error("Failed to verify user token in layout:", error);
       redirect("/api/auth/clear-cookie");
     }
   } else {

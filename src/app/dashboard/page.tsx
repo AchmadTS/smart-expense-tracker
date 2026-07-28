@@ -57,7 +57,7 @@ export default async function DashboardPage() {
 
     recentTransactions = rawTransactions.map((t) => ({
       ...t,
-      categoryName: t.categoryName || "Umum",
+      categoryName: t.categoryName || "General",
       categoryIcon: t.categoryIcon || "wallet",
       categoryColor: t.categoryColor || "#059669",
     }));
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
 
     userBudgets = rawBudgets.map((b) => ({
       id: b.id,
-      categoryName: b.categoryName || "Kategori",
+      categoryName: b.categoryName || "Category",
       amount: b.amount,
       spent: expenseMap.get(b.categoryId) || "0",
     }));

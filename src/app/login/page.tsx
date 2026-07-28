@@ -13,8 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().email("Format email tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   rememberMe: z.boolean().optional(),
 });
 

@@ -3,6 +3,8 @@
 import { db } from "@/lib/db";
 import { users, passwordResets } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export async function requestPasswordReset(email: string) {
     const [user] = await db
@@ -16,7 +18,7 @@ export async function requestPasswordReset(email: string) {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 60 * 1000);
+    const expiresAt = new Date(Date.now() + 60 * 1000); // 1 menit
 
     await db
         .insert(passwordResets)
@@ -30,6 +32,7 @@ export async function requestPasswordReset(email: string) {
             set: {
                 otp,
                 expiresAt,
+                token: null,
                 createdAt: new Date(),
             },
         });
@@ -55,7 +58,7 @@ export async function verifyPasswordResetOtp(email: string, otpCode: string) {
         .where(eq(passwordResets.userId, user.id))
         .limit(1);
 
-    if (!resetRecord) {
+    if (!resetRecord || !resetRecord.expiresAt) {
         throw new Error("OTP code is invalid or has expired.");
     }
 
@@ -67,9 +70,47 @@ export async function verifyPasswordResetOtp(email: string, otpCode: string) {
         throw new Error("Wrong OTP code.");
     }
 
+    const resetToken = crypto.randomBytes(32).toString("hex");
     await db
-        .delete(passwordResets)
+        .update(passwordResets)
+        .set({
+            token: resetToken,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        })
         .where(eq(passwordResets.userId, user.id));
 
-    return { success: true, message: "Verification successful!" };
+    return { success: true, token: resetToken, message: "Verification successful!" };
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+    if (!token || !newPassword) {
+        throw new Error("Token and new password are required.");
+    }
+
+    const [record] = await db
+        .select()
+        .from(passwordResets)
+        .where(eq(passwordResets.token, token))
+        .limit(1);
+
+    if (!record || !record.expiresAt) {
+        throw new Error("Invalid or expired session token.");
+    }
+
+    if (new Date() > new Date(record.expiresAt)) {
+        throw new Error("Reset session has expired. Please restart the process.");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await db
+        .update(users)
+        .set({ passwordHash: hashedPassword })
+        .where(eq(users.id, record.userId));
+
+    await db
+        .delete(passwordResets)
+        .where(eq(passwordResets.userId, record.userId));
+
+    return { success: true, message: "Password updated successfully!" };
 }

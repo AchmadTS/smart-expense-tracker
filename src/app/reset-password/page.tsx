@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Wallet, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
@@ -11,13 +11,12 @@ import Spinner from "@/components/Spinner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { resetPassword } from "@/services/auth";
 
 const resetSchema = z
   .object({
     password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z
-      .string()
-      .min(6, "Confirm password minimum 6 characters"),
+    confirmPassword: z.string().min(6, "Confirm password minimum 6 characters"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password does not match",
@@ -26,11 +25,36 @@ const resetSchema = z
 
 type ResetFormData = z.infer<typeof resetSchema>;
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlToken = searchParams.get("token");
+  const [token] = useState<string>(() => {
+    if (urlToken) return urlToken;
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("reset_token") || "";
+    }
+    return "";
+  });
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const activeToken =
+      urlToken ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("reset_token")
+        : null);
+    if (!activeToken) {
+      toast.error(
+        "Invalid session. Please restart the forgot password process.",
+      );
+      router.push("/forgot-password");
+    }
+  }, [urlToken, router]);
+
   const {
     register,
     handleSubmit,
@@ -82,20 +106,33 @@ export default function ResetPassword() {
   };
 
   const onSubmit = async (data: ResetFormData) => {
+    if (!token) {
+      toast.error(
+        "Invalid session. Please restart the forgot password process.",
+      );
+      router.push("/forgot-password");
+      return;
+    }
+
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await resetPassword(token, data.password);
+      localStorage.removeItem("reset_token");
       toast.success("Password changed successfully!");
       router.push("/login");
     } catch (err: unknown) {
-      toast.error("Failed to reset password, please try again.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to reset password, please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-white w-full">
       <div className="flex-1 flex flex-col px-6 sm:px-10 lg:px-14 py-8 order-1">
         <div className="flex justify-start items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center">
@@ -231,7 +268,7 @@ export default function ResetPassword() {
                 {loading ? (
                   <>
                     <Spinner size="sm" />
-                    Keep...
+                    Saving...
                   </>
                 ) : (
                   "Save New Password"
@@ -269,5 +306,19 @@ export default function ResetPassword() {
         />
       </div>
     </div>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <Spinner />
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

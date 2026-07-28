@@ -79,8 +79,9 @@ export default function ForgotPassword() {
   const verifyOtp = async (otpCode: string) => {
     setLoading(true);
     try {
-      await verifyPasswordResetOtp(userEmail, otpCode);
-      setStep("SUCCESS");
+      const res = await verifyPasswordResetOtp(userEmail, otpCode);
+      localStorage.setItem("reset_token", res.token);
+      router.push(`/reset-password?token=${res.token}`);
       toast.success("Verification Successful!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Wrong OTP code";
@@ -350,7 +351,11 @@ export default function ForgotPassword() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9, duration: 0.4 }}
-                    onClick={() => router.push("/reset-password")}
+                    onClick={() =>
+                      router.push(
+                        `/reset-password?email=${encodeURIComponent(userEmail)}`,
+                      )
+                    }
                     className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
                   >
                     Create New Password

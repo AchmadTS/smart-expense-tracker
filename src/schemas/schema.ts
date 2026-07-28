@@ -91,6 +91,7 @@ export const passwordResets = pgTable(
     {
         userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
         otp: varchar("otp", { length: 6 }).notNull(),
+        token: varchar("token", { length: 255 }), // Kolom baru untuk token aman
         expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     }

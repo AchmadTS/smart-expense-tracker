@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -41,11 +41,26 @@ export default function Sidebar({ user }: SidebarProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const initial = user?.name?.[0]?.toUpperCase() || "U";
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showLogoutModal) {
+        setShowLogoutModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showLogoutModal]);
+
   const currentNavItem = navItems.find((item) =>
     item.href === "/dashboard"
       ? pathname === "/dashboard"
       : pathname.startsWith(item.href),
   );
+
   const currentPageName = currentNavItem
     ? currentNavItem.label.toLowerCase()
     : "dashboard";

@@ -14,13 +14,13 @@ import { z } from "zod";
 
 const resetSchema = z
   .object({
-    password: z.string().min(6, "Password minimal 6 karakter"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z
       .string()
-      .min(6, "Konfirmasi password minimal 6 karakter"),
+      .min(6, "Confirm password minimum 6 characters"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Password tidak cocok",
+    message: "Password does not match",
     path: ["confirmPassword"],
   });
 
@@ -78,17 +78,17 @@ export default function ResetPassword() {
     setValue("password", generated, { shouldValidate: true });
     setValue("confirmPassword", generated, { shouldValidate: true });
     setShowPassword(true);
-    toast.success("Password kuat berhasil dibuat!");
+    toast.success("Strong password successfully created!");
   };
 
   const onSubmit = async (data: ResetFormData) => {
     setLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success("Password berhasil diubah!");
+      toast.success("Password changed successfully!");
       router.push("/login");
     } catch (err: unknown) {
-      toast.error("Gagal mereset password, coba lagi.");
+      toast.error("Failed to reset password, please try again.");
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ export default function ResetPassword() {
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
                     className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
-                    placeholder="Minimal 6 karakter"
+                    placeholder="Minimum 6 characters"
                   />
                   <button
                     type="button"
@@ -201,7 +201,7 @@ export default function ResetPassword() {
                         ? "border-rose-500 focus:border-rose-500"
                         : "border-transparent focus:border-teal-500"
                     }`}
-                    placeholder="Ulangi password baru"
+                    placeholder="Repeat new password"
                   />
                   <button
                     type="button"

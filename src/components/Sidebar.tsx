@@ -13,6 +13,7 @@ import {
   LogOut,
   AlertCircle,
 } from "lucide-react";
+import { BarProps } from "@/types/user";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,16 +27,7 @@ const navItems = [
   { href: "/dashboard/insights", label: "AI Insights", icon: Sparkles },
 ];
 
-interface UserProfile {
-  name?: string | null;
-  email?: string | null;
-}
-
-interface SidebarProps {
-  user?: UserProfile | null;
-}
-
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user }: BarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);

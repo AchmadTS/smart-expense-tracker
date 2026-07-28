@@ -15,25 +15,7 @@ import KpiCard from "@/components/KpiCard";
 import CategoryBadge from "@/components/CategoryBadge";
 import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
 import CategoryBreakdownChart from "@/components/charts/CategoryBreakdownChart";
-
-interface DashboardTransaction {
-  id: number;
-  description: string | null;
-  categoryName: string | null;
-  categoryIcon: string | null;
-  categoryColor: string | null;
-  createdAt: Date | null;
-  transactionDate: string;
-  type: "income" | "expense" | "transfer";
-  amount: string;
-}
-
-interface DashboardBudget {
-  id: number;
-  categoryName: string;
-  amount: string;
-  spent: string;
-}
+import { DashboardTransaction, DashboardBudget } from "@/types/dashboard";
 
 export default async function DashboardPage() {
   const currency = "IDR";

@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Search } from "lucide-react";
+import { BarProps } from "@/types/user";
 
 const greeting = () => {
     const h = new Date().getHours();
@@ -16,15 +17,7 @@ const formatToday = () =>
         day: "numeric",
     });
 
-interface UserProfile {
-    name?: string | null;
-}
-
-interface TopbarProps {
-    user?: UserProfile | null;
-}
-
-export default function Topbar({ user }: TopbarProps) {
+export default function Topbar({ user }: BarProps) {
     const firstName = user?.name?.split(" ")[0] || "";
 
     return (

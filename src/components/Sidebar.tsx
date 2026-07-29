@@ -16,19 +16,21 @@ import {
   Shield,
   Moon,
   ChevronUp,
+  ChevronRight,
+  Fingerprint,
 } from "lucide-react";
 import { BarProps } from "@/types/user";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   {
-    href: "transactions",
+    href: "/dashboard/transactions",
     label: "Transactions",
     icon: ArrowLeftRight,
   },
-  { href: "categories", label: "Categories", icon: Folder },
-  { href: "budgets", label: "Budgets", icon: Target },
-  { href: "insights", label: "AI Insights", icon: Sparkles },
+  { href: "/dashboard/categories", label: "Categories", icon: Folder },
+  { href: "/dashboard/budgets", label: "Budgets", icon: Target },
+  { href: "/dashboard/insights", label: "AI Insights", icon: Sparkles },
 ];
 
 export default function Sidebar({ user }: BarProps) {
@@ -37,6 +39,8 @@ export default function Sidebar({ user }: BarProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSecurityExpanded, setIsSecurityExpanded] = useState(false);
+  const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initial = user?.name?.[0]?.toUpperCase() || "U";
 
@@ -44,6 +48,7 @@ export default function Sidebar({ user }: BarProps) {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
+        setIsSecurityExpanded(false);
       }
     };
 
@@ -57,7 +62,10 @@ export default function Sidebar({ user }: BarProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showLogoutModal) setShowLogoutModal(false);
-        if (showProfileMenu) setShowProfileMenu(false);
+        if (showProfileMenu) {
+          setShowProfileMenu(false);
+          setIsSecurityExpanded(false);
+        }
       }
     };
 
@@ -138,23 +146,69 @@ export default function Sidebar({ user }: BarProps) {
                   </div>
                 </div>
 
-                <div className="px-2 space-y-0.5">
+                <div className="px-2 space-y-0.5 relative">
                   <Link
-                    href="/account"
-                    onClick={() => setShowProfileMenu(false)}
+                    href="/dashboard/account"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setIsSecurityExpanded(false);
+                    }}
                     className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                   >
                     <User size={16} className="text-slate-400" />
                     Account
                   </Link>
-                  <Link
-                    href="/security"
-                    onClick={() => setShowProfileMenu(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    <Shield size={16} className="text-slate-400" />
-                    Security
-                  </Link>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsSecurityExpanded(!isSecurityExpanded)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
+                        isSecurityExpanded
+                          ? "bg-slate-50 text-slate-900"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Shield size={16} className="text-slate-400" />
+                        Security
+                      </div>
+                      <ChevronRight
+                        size={15}
+                        className={`transition-colors duration-200 ${
+                          isSecurityExpanded
+                            ? "text-slate-900"
+                            : "text-slate-400"
+                        }`}
+                      />
+                    </button>
+
+                    {isSecurityExpanded && (
+                      <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-50 animate-in fade-in slide-in-from-left-1 duration-150">
+                        <button
+                          onClick={() => setIsPasskeyEnabled(!isPasskeyEnabled)}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Fingerprint size={14} className="text-teal-600" />
+                            <span>Enable Passkey</span>
+                          </div>
+                          <div
+                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${
+                              isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"
+                            }`}
+                          >
+                            <div
+                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${
+                                isPasskeyEnabled
+                                  ? "translate-x-3"
+                                  : "translate-x-0"
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="my-1 border-t border-slate-100"></div>
 
@@ -167,7 +221,7 @@ export default function Sidebar({ user }: BarProps) {
                       Dark Mode
                     </div>
                     <div
-                      className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 ${isDarkMode ? "bg-teal-500" : "bg-slate-200"}`}
+                      className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 shrink-0 ${isDarkMode ? "bg-teal-500" : "bg-slate-200"}`}
                     >
                       <div
                         className={`absolute top-0.5 left-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ${isDarkMode ? "translate-x-3.5" : "translate-x-0"}`}
@@ -180,6 +234,7 @@ export default function Sidebar({ user }: BarProps) {
                   <button
                     onClick={() => {
                       setShowProfileMenu(false);
+                      setIsSecurityExpanded(false);
                       setShowLogoutModal(true);
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition cursor-pointer"
@@ -192,7 +247,11 @@ export default function Sidebar({ user }: BarProps) {
             )}
 
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              onClick={() => {
+                const newValue = !showProfileMenu;
+                setShowProfileMenu(newValue);
+                if (!newValue) setIsSecurityExpanded(false);
+              }}
               className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-50 transition cursor-pointer text-left focus:outline-none"
             >
               <div className="h-9 w-9 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-inner">

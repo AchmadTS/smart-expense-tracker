@@ -46,6 +46,24 @@ export default function Sidebar({ user }: BarProps) {
   const initial = user?.name?.[0]?.toUpperCase() || "U";
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
 
+  useEffect(() => {
+    async function checkPasskeyStatus() {
+      try {
+        const resp = await fetch("/api/auth/passkey/status", {
+          credentials: "include",
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          setIsPasskeyEnabled(data.hasPasskey);
+        }
+      } catch (error) {
+        console.error("Failed to check passkey status:", error);
+      }
+    }
+
+    checkPasskeyStatus();
+  }, []);
+
   const handleTogglePasskey = async () => {
     if (isPasskeyEnabled) {
       setIsPasskeyEnabled(false);
@@ -86,8 +104,6 @@ export default function Sidebar({ user }: BarProps) {
         );
       }
     } catch (error) {
-      console.error("Failed to register Passkey:", error);
-
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
           alert("Passkey registration cancelled.");

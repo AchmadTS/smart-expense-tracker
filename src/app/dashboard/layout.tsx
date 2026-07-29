@@ -41,8 +41,7 @@ export default async function DashboardLayout({
           currentUser = result[0];
         }
       }
-    } catch (error) {
-      console.error("Failed to verify user token in layout:", error);
+    } catch {
       redirect("/api/auth/clear-cookie");
     }
   } else {

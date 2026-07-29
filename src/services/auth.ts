@@ -134,9 +134,7 @@ export async function requestPasswordReset(email: string) {
     `,
         });
 
-        console.log(`[DEV OTP] Email sukses terkirim ke ${email}: ${otp}`);
-    } catch (error) {
-        console.error("Gagal mengirim email OTP via Nodemailer:", error);
+    } catch {
         throw new Error("Failed to send OTP email. Please check server logs.");
     }
 

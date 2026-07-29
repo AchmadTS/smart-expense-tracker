@@ -38,6 +38,8 @@ export default function Sidebar({ user }: BarProps) {
   const pathname = usePathname();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showRemovePasskeyModal, setShowRemovePasskeyModal] = useState(false);
+  const [isRemovingPasskey, setIsRemovingPasskey] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSecurityExpanded, setIsSecurityExpanded] = useState(false);
@@ -66,7 +68,8 @@ export default function Sidebar({ user }: BarProps) {
 
   const handleTogglePasskey = async () => {
     if (isPasskeyEnabled) {
-      setIsPasskeyEnabled(false);
+      setShowRemovePasskeyModal(true);
+      setShowProfileMenu(false);
       return;
     }
 
@@ -118,6 +121,25 @@ export default function Sidebar({ user }: BarProps) {
     }
   };
 
+  const confirmRemovePasskey = async () => {
+    try {
+      setIsRemovingPasskey(true);
+      const resp = await fetch("/api/auth/passkey/remove", {
+        method: "DELETE",
+      });
+
+      if (!resp.ok) throw new Error("Failed to remove passkey");
+
+      setIsPasskeyEnabled(false);
+      setShowRemovePasskeyModal(false);
+    } catch (error) {
+      console.error(error);
+      alert("An error occurred while removing passkey.");
+    } finally {
+      setIsRemovingPasskey(false);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -127,15 +149,14 @@ export default function Sidebar({ user }: BarProps) {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showLogoutModal) setShowLogoutModal(false);
+        if (showRemovePasskeyModal) setShowRemovePasskeyModal(false);
         if (showProfileMenu) {
           setShowProfileMenu(false);
           setIsSecurityExpanded(false);
@@ -144,10 +165,8 @@ export default function Sidebar({ user }: BarProps) {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showLogoutModal, showProfileMenu]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showLogoutModal, showProfileMenu, showRemovePasskeyModal]);
 
   const currentNavItem = navItems.find((item) =>
     item.href === "/dashboard"
@@ -248,11 +267,7 @@ export default function Sidebar({ user }: BarProps) {
                       </div>
                       <ChevronRight
                         size={15}
-                        className={`transition-colors duration-200 ${
-                          isSecurityExpanded
-                            ? "text-slate-900"
-                            : "text-slate-400"
-                        }`}
+                        className={`transition-colors duration-200 ${isSecurityExpanded ? "text-slate-900" : "text-slate-400"}`}
                       />
                     </button>
 
@@ -276,16 +291,10 @@ export default function Sidebar({ user }: BarProps) {
                             </span>
                           </div>
                           <div
-                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${
-                              isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"
-                            }`}
+                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"}`}
                           >
                             <div
-                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${
-                                isPasskeyEnabled
-                                  ? "translate-x-3"
-                                  : "translate-x-0"
-                              }`}
+                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${isPasskeyEnabled ? "translate-x-3" : "translate-x-0"}`}
                             />
                           </div>
                         </button>
@@ -353,6 +362,43 @@ export default function Sidebar({ user }: BarProps) {
           </div>
         </div>
       </aside>
+
+      {showRemovePasskeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-sm shadow-xl mx-4 space-y-4">
+            <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-1">
+              <Shield size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                Disable Passkey?
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                You are about to remove your Passkey. You will no longer be able
+                to log in using fingerprint or face unlock.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isRemovingPasskey}
+                onClick={() => setShowRemovePasskeyModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isRemovingPasskey}
+                onClick={confirmRemovePasskey}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500 text-sm font-medium text-white hover:bg-amber-600 transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
+              >
+                {isRemovingPasskey ? "Disabling..." : "Yes, Disable"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">

@@ -132,8 +132,7 @@ export default function Sidebar({ user }: BarProps) {
 
       setIsPasskeyEnabled(false);
       setShowRemovePasskeyModal(false);
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("An error occurred while removing passkey.");
     } finally {
       setIsRemovingPasskey(false);
@@ -192,9 +191,106 @@ export default function Sidebar({ user }: BarProps) {
     }
   };
 
+  const profileMenuContent = (
+    <div className="px-2 space-y-0.5 relative">
+      <Link
+        href="/dashboard/account"
+        onClick={() => {
+          setShowProfileMenu(false);
+          setIsSecurityExpanded(false);
+        }}
+        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+      >
+        <User size={16} className="text-slate-400" />
+        Account
+      </Link>
+
+      <div className="relative">
+        <button
+          onClick={() => setIsSecurityExpanded(!isSecurityExpanded)}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
+            isSecurityExpanded
+              ? "bg-slate-50 text-slate-900"
+              : "text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Shield size={16} className="text-slate-400" />
+            Security
+          </div>
+          <ChevronRight
+            size={15}
+            className={`transition-colors duration-200 ${isSecurityExpanded ? "rotate-90 text-slate-900" : "text-slate-400"}`}
+          />
+        </button>
+
+        {isSecurityExpanded && (
+          <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-50 animate-in fade-in slide-in-from-left-1 duration-150">
+            <button
+              onClick={handleTogglePasskey}
+              disabled={isPasskeyLoading}
+              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
+                isPasskeyLoading
+                  ? "opacity-50 cursor-wait text-slate-500"
+                  : "text-slate-700 hover:bg-slate-50 cursor-pointer"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Fingerprint size={14} className="text-teal-600" />
+                <span>
+                  {isPasskeyLoading ? "Processing..." : "Enable Passkey"}
+                </span>
+              </div>
+              <div
+                className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"}`}
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${isPasskeyEnabled ? "translate-x-3" : "translate-x-0"}`}
+                />
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="my-1 border-t border-slate-100"></div>
+
+      <button
+        onClick={() => setIsDarkMode(!isDarkMode)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+      >
+        <div className="flex items-center gap-3">
+          <Moon size={16} className="text-slate-400" />
+          Dark Mode
+        </div>
+        <div
+          className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 shrink-0 ${isDarkMode ? "bg-teal-500" : "bg-slate-200"}`}
+        >
+          <div
+            className={`absolute top-0.5 left-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ${isDarkMode ? "translate-x-3.5" : "translate-x-0"}`}
+          ></div>
+        </div>
+      </button>
+
+      <div className="my-1 border-t border-slate-100"></div>
+
+      <button
+        onClick={() => {
+          setShowProfileMenu(false);
+          setIsSecurityExpanded(false);
+          setShowLogoutModal(true);
+        }}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+      >
+        <LogOut size={16} />
+        Log out
+      </button>
+    </div>
+  );
+
   return (
     <>
-      <aside className="w-64 bg-white border-r border-slate-100 hidden lg:flex flex-col shrink-0">
+      <aside className="w-64 bg-white border-r border-slate-100 hidden lg:flex flex-col shrink-0 h-screen sticky top-0">
         <div className="h-16 flex items-center gap-2 px-6 border-b border-slate-100">
           <div className="h-8 w-8 rounded-lg bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center">
             <Wallet size={16} className="text-white" />
@@ -202,13 +298,12 @@ export default function Sidebar({ user }: BarProps) {
           <span className="font-bold text-slate-900">ExpenseAI</span>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1.5">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive =
               href === "/dashboard"
                 ? pathname === "/dashboard"
                 : pathname.startsWith(href);
-
             return (
               <Link
                 key={href}
@@ -238,103 +333,7 @@ export default function Sidebar({ user }: BarProps) {
                     {user?.email || "user@example.com"}
                   </div>
                 </div>
-
-                <div className="px-2 space-y-0.5 relative">
-                  <Link
-                    href="/dashboard/account"
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setIsSecurityExpanded(false);
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    <User size={16} className="text-slate-400" />
-                    Account
-                  </Link>
-
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsSecurityExpanded(!isSecurityExpanded)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
-                        isSecurityExpanded
-                          ? "bg-slate-50 text-slate-900"
-                          : "text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Shield size={16} className="text-slate-400" />
-                        Security
-                      </div>
-                      <ChevronRight
-                        size={15}
-                        className={`transition-colors duration-200 ${isSecurityExpanded ? "text-slate-900" : "text-slate-400"}`}
-                      />
-                    </button>
-
-                    {isSecurityExpanded && (
-                      <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-50 animate-in fade-in slide-in-from-left-1 duration-150">
-                        <button
-                          onClick={handleTogglePasskey}
-                          disabled={isPasskeyLoading}
-                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
-                            isPasskeyLoading
-                              ? "opacity-50 cursor-wait bg-slate-50 text-slate-500"
-                              : "text-slate-700 hover:bg-slate-50 cursor-pointer"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Fingerprint size={14} className="text-teal-600" />
-                            <span>
-                              {isPasskeyLoading
-                                ? "Processing..."
-                                : "Enable Passkey"}
-                            </span>
-                          </div>
-                          <div
-                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"}`}
-                          >
-                            <div
-                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${isPasskeyEnabled ? "translate-x-3" : "translate-x-0"}`}
-                            />
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="my-1 border-t border-slate-100"></div>
-
-                  <button
-                    onClick={() => setIsDarkMode(!isDarkMode)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Moon size={16} className="text-slate-400" />
-                      Dark Mode
-                    </div>
-                    <div
-                      className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 shrink-0 ${isDarkMode ? "bg-teal-500" : "bg-slate-200"}`}
-                    >
-                      <div
-                        className={`absolute top-0.5 left-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ${isDarkMode ? "translate-x-3.5" : "translate-x-0"}`}
-                      ></div>
-                    </div>
-                  </button>
-
-                  <div className="my-1 border-t border-slate-100"></div>
-
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setIsSecurityExpanded(false);
-                      setShowLogoutModal(true);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                  >
-                    <LogOut size={16} />
-                    Log out
-                  </button>
-                </div>
+                {profileMenuContent}
               </div>
             )}
 
@@ -362,6 +361,37 @@ export default function Sidebar({ user }: BarProps) {
           </div>
         </div>
       </aside>
+
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around px-2 pb-safe pt-2 h-16 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive =
+            href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
+                isActive
+                  ? "text-teal-600"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <div
+                className={`relative p-1 rounded-xl transition-all duration-300 ${isActive ? "bg-teal-50" : ""}`}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span
+                className={`text-[10px] font-medium ${isActive ? "text-teal-700" : "text-slate-500"}`}
+              >
+                {label.replace("AI ", "")}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
 
       {showRemovePasskeyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">

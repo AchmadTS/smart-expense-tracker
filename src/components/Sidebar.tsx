@@ -20,6 +20,7 @@ import {
   Fingerprint,
 } from "lucide-react";
 import { BarProps } from "@/types/user";
+import { startRegistration } from "@simplewebauthn/browser";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -43,6 +44,63 @@ export default function Sidebar({ user }: BarProps) {
   const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initial = user?.name?.[0]?.toUpperCase() || "U";
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+
+  const handleTogglePasskey = async () => {
+    if (isPasskeyEnabled) {
+      setIsPasskeyEnabled(false);
+      return;
+    }
+
+    try {
+      setIsPasskeyLoading(true);
+
+      const resp = await fetch("/api/auth/passkey/register-options", {
+        credentials: "include",
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to load passkey options.");
+      }
+
+      const attResp = await startRegistration(data);
+      const verifyResp = await fetch("/api/auth/passkey/register-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(attResp),
+      });
+
+      const verifyResult = await verifyResp.json();
+
+      if (!verifyResp.ok) {
+        throw new Error(verifyResult.error || "Failed to verify Passkey.");
+      }
+
+      if (verifyResult.success) {
+        setIsPasskeyEnabled(true);
+        alert(
+          "Passkey successfully activated! You can log in using biometrics.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to register Passkey:", error);
+
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          alert("Passkey registration cancelled.");
+        } else {
+          alert(`Failed to activate Passkey: ${error.message}`);
+        }
+      } else {
+        alert("An unknown system error occurred.");
+      }
+    } finally {
+      setIsPasskeyLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,12 +243,21 @@ export default function Sidebar({ user }: BarProps) {
                     {isSecurityExpanded && (
                       <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-50 animate-in fade-in slide-in-from-left-1 duration-150">
                         <button
-                          onClick={() => setIsPasskeyEnabled(!isPasskeyEnabled)}
-                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                          onClick={handleTogglePasskey}
+                          disabled={isPasskeyLoading}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
+                            isPasskeyLoading
+                              ? "opacity-50 cursor-wait bg-slate-50 text-slate-500"
+                              : "text-slate-700 hover:bg-slate-50 cursor-pointer"
+                          }`}
                         >
                           <div className="flex items-center gap-2">
                             <Fingerprint size={14} className="text-teal-600" />
-                            <span>Enable Passkey</span>
+                            <span>
+                              {isPasskeyLoading
+                                ? "Processing..."
+                                : "Enable Passkey"}
+                            </span>
                           </div>
                           <div
                             className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${

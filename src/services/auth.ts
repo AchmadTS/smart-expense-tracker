@@ -1,5 +1,7 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
 import { db } from "@/lib/db";
 import { users, passwordResets } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
@@ -213,4 +215,39 @@ export async function resetPassword(token: string, newPassword: string) {
         .where(eq(passwordResets.userId, record.userId));
 
     return { success: true, message: "Password updated successfully!" };
+}
+
+export async function getUserFromSession() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload } = await jwtVerify(token, secret);
+
+        if (!payload.userId) {
+            return null;
+        }
+
+        const [user] = await db.select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            createdAt: users.createdAt,
+        }).from(users)
+            .where(eq(users.id, Number(payload.userId)))
+            .limit(1);
+
+        if (!user) {
+            return null;
+        }
+
+        return user;
+    } catch {
+        return null;
+    }
 }

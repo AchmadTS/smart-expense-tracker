@@ -8,6 +8,7 @@ export const users = pgTable("users", {
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     currency: varchar("currency", { length: 3 }).default("IDR"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    currentChallenge: text("current_challenge"),
 });
 
 export const categories = pgTable(
@@ -96,3 +97,12 @@ export const passwordResets = pgTable(
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     }
 );
+
+export const passkeys = pgTable("passkeys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  credentialID: text("credential_id").notNull(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});

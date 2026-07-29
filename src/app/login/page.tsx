@@ -76,6 +76,10 @@ export default function Login() {
     }
   };
 
+  useEffect(() => {
+    sessionStorage.setItem("last_auth_page", window.location.pathname);
+  }, []);
+
   return (
     <div className="min-h-screen flex bg-white">
       <div className="flex-1 flex flex-col px-6 sm:px-10 lg:px-14 py-8 order-1">

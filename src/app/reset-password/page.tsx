@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -41,6 +41,20 @@ function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const redirectToOrigin = useCallback(() => {
+    const lastPage =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("last_auth_page")
+        : "";
+
+    if (lastPage === "/register") {
+      router.push("/register");
+    } else if (lastPage === "/forgot-password") {
+      router.push("/forgot-password");
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
 
   useEffect(() => {
     const activeToken =
@@ -51,29 +65,29 @@ function ResetPasswordForm() {
 
     if (!activeToken) {
       toast.error(
-        "Invalid session. Please restart the forgot password process.",
+        "Invalid session. Please authenticate or restart the process.",
       );
-      router.push("/forgot-password");
+      redirectToOrigin();
       return;
     }
 
     let expiry = localStorage.getItem("reset_expiry");
 
     if (!expiry) {
-      expiry = (Date.now() + 10 * 60 * 1000).toString();
+      expiry = (new Date().getTime() + 10 * 60 * 1000).toString();
       localStorage.setItem("reset_expiry", expiry);
     }
 
     const updateTimer = () => {
-      const now = Date.now();
+      const now = new Date().getTime();
       const remaining = Math.floor((parseInt(expiry as string) - now) / 1000);
 
       if (remaining <= 0) {
         setTimeLeft(0);
         localStorage.removeItem("reset_token");
         localStorage.removeItem("reset_expiry");
-        toast.error("Session expired. Please request a new OTP.");
-        router.push("/forgot-password");
+        toast.error("Session expired. Please restart the process.");
+        redirectToOrigin();
       } else {
         setTimeLeft(remaining);
       }
@@ -82,7 +96,7 @@ function ResetPasswordForm() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [urlToken, router]);
+  }, [urlToken, redirectToOrigin]);
 
   const {
     register,
@@ -136,10 +150,8 @@ function ResetPasswordForm() {
 
   const onSubmit = async (data: ResetFormData) => {
     if (!token) {
-      toast.error(
-        "Invalid session. Please restart the forgot password process.",
-      );
-      router.push("/forgot-password");
+      toast.error("Invalid session.");
+      redirectToOrigin();
       return;
     }
 
@@ -148,6 +160,7 @@ function ResetPasswordForm() {
       await resetPassword(token, data.password);
       localStorage.removeItem("reset_token");
       localStorage.removeItem("reset_expiry");
+      sessionStorage.removeItem("last_auth_page");
       toast.success("Password changed successfully!");
       router.push("/login");
     } catch (err: unknown) {

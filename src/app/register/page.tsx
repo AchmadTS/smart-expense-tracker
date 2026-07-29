@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -108,6 +108,10 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    sessionStorage.setItem("last_auth_page", window.location.pathname);
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-white">

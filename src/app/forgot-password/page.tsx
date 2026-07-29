@@ -39,6 +39,10 @@ export default function ForgotPassword() {
   });
 
   useEffect(() => {
+    sessionStorage.setItem("last_auth_page", window.location.pathname);
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       const savedStep = localStorage.getItem("forgot_step") as Step;
       const savedEmail = localStorage.getItem("forgot_email");

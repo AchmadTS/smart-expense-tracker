@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { Wallet, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { Wallet, Eye, EyeOff, Sparkles, ArrowLeft, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import AuthHero from "@/components/AuthHero";
 import Spinner from "@/components/Spinner";
@@ -40,6 +40,7 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
     const activeToken =
@@ -47,12 +48,40 @@ function ResetPasswordForm() {
       (typeof window !== "undefined"
         ? localStorage.getItem("reset_token")
         : null);
+
     if (!activeToken) {
       toast.error(
         "Invalid session. Please restart the forgot password process.",
       );
       router.push("/forgot-password");
+      return;
     }
+
+    let expiry = localStorage.getItem("reset_expiry");
+
+    if (!expiry) {
+      expiry = (Date.now() + 10 * 60 * 1000).toString();
+      localStorage.setItem("reset_expiry", expiry);
+    }
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.floor((parseInt(expiry as string) - now) / 1000);
+
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        localStorage.removeItem("reset_token");
+        localStorage.removeItem("reset_expiry");
+        toast.error("Session expired. Please request a new OTP.");
+        router.push("/forgot-password");
+      } else {
+        setTimeLeft(remaining);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
   }, [urlToken, router]);
 
   const {
@@ -118,6 +147,7 @@ function ResetPasswordForm() {
     try {
       await resetPassword(token, data.password);
       localStorage.removeItem("reset_token");
+      localStorage.removeItem("reset_expiry");
       toast.success("Password changed successfully!");
       router.push("/login");
     } catch (err: unknown) {
@@ -129,6 +159,12 @@ function ResetPasswordForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -153,10 +189,26 @@ function ResetPasswordForm() {
             <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">
               Create New Password
             </h2>
-            <p className="text-slate-500 mb-10">
-              Your new password must be unique and different from your previous
-              password.
-            </p>
+
+            <div className="flex items-start justify-between mb-10 gap-4">
+              <p className="text-slate-500 text-sm">
+                Your new password must be unique and different from your
+                previous password.
+              </p>
+
+              {timeLeft !== null && (
+                <div
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+                    timeLeft < 60
+                      ? "bg-rose-50 text-rose-600 border-rose-200"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
+                  }`}
+                >
+                  <Clock size={16} />
+                  {formatTime(timeLeft)}
+                </div>
+              )}
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
@@ -262,7 +314,7 @@ function ResetPasswordForm() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || timeLeft === 0}
                 className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-4"
               >
                 {loading ? (

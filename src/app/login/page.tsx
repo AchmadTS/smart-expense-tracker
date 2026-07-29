@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Wallet, Eye, EyeOff } from "lucide-react";
+import { Wallet, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AuthHero from "@/components/AuthHero";
 import Spinner from "@/components/Spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { startAuthentication } from "@simplewebauthn/browser";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -25,6 +26,7 @@ export default function Login() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -74,6 +76,52 @@ export default function Login() {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setPasskeyLoading(true);
+    try {
+      const resp = await fetch("/api/auth/passkey/login-options", {
+        credentials: "include",
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to load passkey login options.");
+      }
+
+      const authResp = await startAuthentication({ optionsJSON: data });
+      const verifyResp = await fetch("/api/auth/passkey/login-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(authResp),
+      });
+
+      const verifyResult = await verifyResp.json();
+
+      if (!verifyResp.ok) {
+        throw new Error(verifyResult.error || "Passkey verification failed.");
+      }
+
+      if (verifyResult.success) {
+        toast.success("Signed in with Passkey successfully!");
+        router.replace("/dashboard");
+        router.refresh();
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          toast.error("Passkey sign-in cancelled.");
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error("An unknown error occurred during Passkey login.");
+      }
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -186,6 +234,35 @@ export default function Login() {
               </button>
             </form>
 
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-3 text-slate-400 font-medium">
+                  Or
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePasskeyLogin}
+              disabled={passkeyLoading}
+              className="w-full inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-semibold py-4 rounded-2xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {passkeyLoading ? (
+                <>
+                  <Spinner size="sm" />
+                  Verifying Passkey...
+                </>
+              ) : (
+                <>
+                  <KeyRound size={18} className="text-teal-600" />
+                  Sign in with Passkey
+                </>
+              )}
+            </button>
             <p className="text-center mt-8 text-sm text-slate-500">
               No Account Yet?{" "}
               <Link

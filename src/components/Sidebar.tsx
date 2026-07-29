@@ -83,7 +83,7 @@ export default function Sidebar({ user }: BarProps) {
         throw new Error(data.error || "Failed to load passkey options.");
       }
 
-      const attResp = await startRegistration(data);
+      const attResp = await startRegistration({ optionsJSON: data });
       const verifyResp = await fetch("/api/auth/passkey/register-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

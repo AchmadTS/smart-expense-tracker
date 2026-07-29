@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
             await db.insert(passkeys).values({
                 userId: user.id,
-                credentialID: Buffer.from(id).toString('base64url'),
+                credentialID: id,
                 publicKey: Buffer.from(publicKey).toString('base64url'),
                 counter,
             });

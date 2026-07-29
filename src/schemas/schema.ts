@@ -99,10 +99,10 @@ export const passwordResets = pgTable(
 );
 
 export const passkeys = pgTable("passkeys", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  credentialID: text("credential_id").notNull(),
-  publicKey: text("public_key").notNull(),
-  counter: integer("counter").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow(),
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    credentialID: text("credential_id").notNull(),
+    publicKey: text("public_key").notNull(),
+    counter: integer("counter").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow(),
 });

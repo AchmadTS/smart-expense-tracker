@@ -26,13 +26,30 @@ export async function POST(req: Request) {
         if (verification.verified && verification.registrationInfo) {
             const { credential } = verification.registrationInfo;
             const { id, publicKey, counter } = credential;
+            const publicKeyBase64 = Buffer.from(publicKey).toString('base64url');
+            const [existingPasskey] = await db
+                .select()
+                .from(passkeys)
+                .where(eq(passkeys.userId, user.id))
+                .limit(1);
 
-            await db.insert(passkeys).values({
-                userId: user.id,
-                credentialID: id,
-                publicKey: Buffer.from(publicKey).toString('base64url'),
-                counter,
-            });
+            if (existingPasskey) {
+                await db
+                    .update(passkeys)
+                    .set({
+                        credentialID: id,
+                        publicKey: publicKeyBase64,
+                        counter: counter,
+                    })
+                    .where(eq(passkeys.userId, user.id));
+            } else {
+                await db.insert(passkeys).values({
+                    userId: user.id,
+                    credentialID: id,
+                    publicKey: publicKeyBase64,
+                    counter,
+                });
+            }
 
             await db.update(users).set({ currentChallenge: null }).where(eq(users.id, user.id));
 
@@ -40,7 +57,8 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ error: "Verification failed" }, { status: 400 });
-    } catch {
+    } catch (error) {
+        console.error("Passkey registration verification error:", error);
         return NextResponse.json({ error: "Verification failed" }, { status: 400 });
     }
 }

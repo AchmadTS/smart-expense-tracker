@@ -100,7 +100,7 @@ export const passwordResets = pgTable(
 
 export const passkeys = pgTable("passkeys", {
     id: serial("id").primaryKey(),
-    userId: integer("user_id").references(() => users.id).notNull(),
+    userId: integer("user_id").references(() => users.id).notNull().unique(),
     credentialID: text("credential_id").notNull(),
     publicKey: text("public_key").notNull(),
     counter: integer("counter").notNull().default(0),

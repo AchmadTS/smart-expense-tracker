@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
         pathname === route || pathname.startsWith(`${route}/`)
     );
 
-    const authRoutes = ["/login", "/register"];
+    const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
     const isAuthRoute = authRoutes.some((route) =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
@@ -38,5 +38,7 @@ export const config = {
         "/budgets/:path*",
         "/login",
         "/register",
+        "/forgot-password",
+        "/reset-password",
     ],
 };

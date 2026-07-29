@@ -21,22 +21,6 @@ export function proxy(request: NextRequest) {
     }
 
     if (isAuthRoute && token) {
-        const referer = request.headers.get("referer");
-
-        if (referer) {
-            try {
-                const refererUrl = new URL(referer);
-
-                if (
-                    refererUrl.origin === request.nextUrl.origin &&
-                    !authRoutes.some((route) => refererUrl.pathname.startsWith(route))
-                ) {
-                    return NextResponse.redirect(refererUrl);
-                }
-            } catch (e) {
-            }
-        }
-
         const dashboardUrl = new URL("/dashboard", request.url);
         return NextResponse.redirect(dashboardUrl);
     }

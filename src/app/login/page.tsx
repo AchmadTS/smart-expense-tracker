@@ -67,7 +67,8 @@ export default function Login() {
       }
 
       toast.success("Welcome back!");
-      router.push("/");
+      router.replace("/dashboard");
+      router.refresh();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       toast.error(errorMessage);

@@ -18,6 +18,9 @@ import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
 import CategoryBreakdownChart from "@/components/charts/CategoryBreakdownChart";
 import { DashboardTransaction, DashboardBudget } from "@/types/dashboard";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const currency = "IDR";
   let recentTransactions: DashboardTransaction[] = [];

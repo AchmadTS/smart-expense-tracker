@@ -7,6 +7,9 @@ import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function DashboardLayout({
   children,
 }: {

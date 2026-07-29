@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -29,7 +29,6 @@ const navItems = [
 
 export default function Sidebar({ user }: BarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const initial = user?.name?.[0]?.toUpperCase() || "U";
@@ -66,8 +65,8 @@ export default function Sidebar({ user }: BarProps) {
     } finally {
       setIsLoggingOut(false);
       setShowLogoutModal(false);
-      router.push("/login");
-      router.refresh();
+
+      window.location.href = "/login";
     }
   };
 

@@ -159,6 +159,12 @@ export default function Login() {
 
                 <Link
                   href="/forgot-password"
+                  onClick={() =>
+                    localStorage.setItem(
+                      "auth_origin",
+                      window.location.pathname,
+                    )
+                  }
                   className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition"
                 >
                   Forgot Password?

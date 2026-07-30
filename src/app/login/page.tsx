@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Wallet, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -23,8 +22,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { login } = useAuth();
-  const router = useRouter();
-
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,8 +66,7 @@ export default function Login() {
       }
 
       toast.success("Welcome back!");
-      router.replace("/dashboard");
-      router.refresh();
+      window.location.replace("/dashboard");
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       toast.error(errorMessage);
@@ -107,8 +103,7 @@ export default function Login() {
 
       if (verifyResult.success) {
         toast.success("Signed in with Passkey successfully!");
-        router.replace("/dashboard");
-        router.refresh();
+        window.location.replace("/dashboard");
       }
     } catch (error: unknown) {
       if (error instanceof Error) {

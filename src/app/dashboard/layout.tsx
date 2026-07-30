@@ -20,31 +20,31 @@ export default async function DashboardLayout({
 
   let currentUser = null;
 
-  if (token) {
-    try {
-      const secret = process.env.JWT_SECRET || "super-secret-auth-key";
-      const decoded = jwt.verify(token, secret) as { userId?: number | string };
+  if (!token) {
+    redirect("/login");
+  }
 
-      if (decoded?.userId) {
-        const userIdNum =
-          typeof decoded.userId === "string"
-            ? parseInt(decoded.userId, 10)
-            : decoded.userId;
+  try {
+    const secret = process.env.JWT_SECRET || "super-secret-auth-key";
+    const decoded = jwt.verify(token, secret) as { userId?: string };
 
-        const result = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userIdNum))
-          .limit(1);
+    if (decoded?.userId) {
+      const userId = decoded.userId;
+      const result = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-        if (result.length > 0) {
-          currentUser = result[0];
-        }
+      if (result.length > 0) {
+        currentUser = result[0];
       }
-    } catch {
-      redirect("/api/auth/clear-cookie");
     }
-  } else {
+  } catch {
+    redirect("/api/auth/clear-cookie");
+  }
+
+  if (!currentUser) {
     redirect("/login");
   }
 

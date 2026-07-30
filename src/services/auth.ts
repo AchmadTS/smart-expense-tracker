@@ -227,7 +227,7 @@ export async function getUserFromSession() {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET);
         const { payload } = await jwtVerify(token, secret);
 
-        if (!payload.userId) {
+        if (!payload.userId || typeof payload.userId !== "string") {
             return null;
         }
 
@@ -237,7 +237,7 @@ export async function getUserFromSession() {
             email: users.email,
             createdAt: users.createdAt,
         }).from(users)
-            .where(eq(users.id, Number(payload.userId)))
+            .where(eq(users.id, payload.userId))
             .limit(1);
 
         if (!user) {

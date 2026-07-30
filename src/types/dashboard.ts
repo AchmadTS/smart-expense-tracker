@@ -1,5 +1,5 @@
 export interface DashboardTransaction {
-  id: number;
+  id: string;
   description: string | null;
   categoryName: string | null;
   categoryIcon: string | null;
@@ -11,7 +11,7 @@ export interface DashboardTransaction {
 }
 
 export interface DashboardBudget {
-  id: number;
+  id: string;
   categoryName: string;
   amount: string;
   spent: string;

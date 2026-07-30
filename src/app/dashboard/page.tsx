@@ -28,15 +28,13 @@ export default async function DashboardPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
   if (!token) redirect("/login");
-  let userIdNum: number;
+
+  let userId: string;
   try {
     const secret = process.env.JWT_SECRET || "super-secret-auth-key";
-    const decoded = jwt.verify(token, secret) as { userId?: number | string };
-    userIdNum =
-      typeof decoded.userId === "string"
-        ? parseInt(decoded.userId, 10)
-        : (decoded.userId as number);
-    if (!userIdNum) throw new Error("Invalid user ID");
+    const decoded = jwt.verify(token, secret) as { userId?: string };
+    userId = decoded.userId as string;
+    if (!userId) throw new Error("Invalid user ID");
   } catch {
     redirect("/login");
   }
@@ -52,6 +50,7 @@ export default async function DashboardPage() {
     total: number;
     color: string;
   }[] = [];
+
   let summary = {
     balance: 0,
     incomeThisMonth: 0,
@@ -82,7 +81,7 @@ export default async function DashboardPage() {
       })
       .from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
-      .where(eq(transactions.userId, userIdNum))
+      .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
 
@@ -98,7 +97,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           eq(transactions.type, "income"),
           sql`${transactions.transactionDate} >= ${currentMonthStart}`,
           sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
@@ -110,7 +109,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           eq(transactions.type, "expense"),
           sql`${transactions.transactionDate} >= ${currentMonthStart}`,
           sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
@@ -122,7 +121,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           eq(transactions.type, "income"),
           sql`${transactions.transactionDate} >= ${lastMonthStart}`,
           sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
@@ -134,7 +133,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           eq(transactions.type, "expense"),
           sql`${transactions.transactionDate} >= ${lastMonthStart}`,
           sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
@@ -193,7 +192,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           sql`${transactions.transactionDate} >= ${sixMonthsAgo}`,
         ),
       );
@@ -220,7 +219,7 @@ export default async function DashboardPage() {
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
         and(
-          eq(transactions.userId, userIdNum),
+          eq(transactions.userId, userId),
           eq(transactions.type, "expense"),
           sql`${transactions.transactionDate} >= ${currentMonthStart}`,
           sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
@@ -253,12 +252,6 @@ export default async function DashboardPage() {
       ];
     }
 
-    categoryBreakdownData = categoryExpensesRaw.map((item) => ({
-      category_name: item.categoryName || "Lainnya",
-      total: parseFloat(item.totalSpent || "0"),
-      color: item.categoryColor || "#94a3b8",
-    }));
-
     const expenseMap = new Map(
       categoryExpensesRaw.map((item) => [
         item.categoryId,
@@ -275,7 +268,7 @@ export default async function DashboardPage() {
       })
       .from(budgets)
       .leftJoin(categories, eq(budgets.categoryId, categories.id))
-      .where(eq(budgets.userId, userIdNum));
+      .where(eq(budgets.userId, userId));
 
     userBudgets = rawBudgets.map((b) => ({
       id: b.id,

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
         }
 
         const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
         const [user] = await db
             .select()
             .from(users)
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
                 currency: user.currency,
             },
         });
-    } catch (err) {
+    } catch {
         return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 }

@@ -1,8 +1,9 @@
-import { pgTable, serial, varchar, timestamp, integer, boolean, unique, numeric, text, date, index, check, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, integer, boolean, unique, numeric, text, date, index, check, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { ulid } from "ulidx";
 
 export const users = pgTable("users", {
-    id: serial("id").primaryKey(),
+    id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
     name: varchar("name", { length: 100 }).notNull(),
     email: varchar("email", { length: 255 }).notNull().unique(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
@@ -14,8 +15,8 @@ export const users = pgTable("users", {
 export const categories = pgTable(
     "categories",
     {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+        id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
+        userId: varchar("user_id", { length: 26 }).notNull().references(() => users.id, { onDelete: "cascade" }),
         name: varchar("name", { length: 50 }).notNull(),
         type: varchar("type", { length: 10 }).$type<"income" | "expense" | "transfer">().notNull(),
         icon: varchar("icon", { length: 50 }),
@@ -31,9 +32,9 @@ export const categories = pgTable(
 export const transactions = pgTable(
     "transactions",
     {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-        categoryId: integer("category_id").references(() => categories.id, {
+        id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
+        userId: varchar("user_id", { length: 26 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+        categoryId: varchar("category_id", { length: 26 }).references(() => categories.id, {
             onDelete: "set null",
         }),
         amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
@@ -53,9 +54,9 @@ export const transactions = pgTable(
 export const budgets = pgTable(
     "budgets",
     {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-        categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+        id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
+        userId: varchar("user_id", { length: 26 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+        categoryId: varchar("category_id", { length: 26 }).notNull().references(() => categories.id, { onDelete: "cascade" }),
         amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
         period: varchar("period", { length: 10 }).$type<"monthly" | "weekly">().default("monthly").notNull(),
         startDate: date("start_date").notNull(),
@@ -70,8 +71,8 @@ export const budgets = pgTable(
 export const ai_insights = pgTable(
     "ai_insights",
     {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+        id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
+        userId: varchar("user_id", { length: 26 }).notNull().references(() => users.id, { onDelete: "cascade" }),
         insightType: varchar("insight_type", { length: 50 }).notNull(),
         periodStart: date("period_start"),
         periodEnd: date("period_end"),
@@ -90,17 +91,17 @@ export const ai_insights = pgTable(
 export const passwordResets = pgTable(
     "password_resets",
     {
-        userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+        userId: varchar("user_id", { length: 26 }).primaryKey().references(() => users.id, { onDelete: "cascade" }),
         otp: varchar("otp", { length: 6 }).notNull(),
-        token: varchar("token", { length: 255 }), // Kolom baru untuk token aman
+        token: varchar("token", { length: 255 }),
         expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     }
 );
 
 export const passkeys = pgTable("passkeys", {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id").references(() => users.id).notNull().unique(),
+    id: varchar("id", { length: 26 }).primaryKey().$defaultFn(() => ulid()),
+    userId: varchar("user_id", { length: 26 }).references(() => users.id).notNull().unique(),
     credentialID: text("credential_id").notNull(),
     publicKey: text("public_key").notNull(),
     counter: integer("counter").notNull().default(0),

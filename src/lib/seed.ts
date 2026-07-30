@@ -3,7 +3,7 @@ import { users, categories, transactions, budgets } from "@/schemas/schema";
 import bcrypt from "bcryptjs";
 
 async function main() {
-    console.log("🌱 Starting database seeding...");
+    console.log("Starting database seeding...");
     const passwordHash = await bcrypt.hash("$aTs130425.", 10);
     const [user] = await db
         .insert(users)
@@ -80,7 +80,6 @@ async function main() {
             description: "Transport Juni",
             transactionDate: "2026-06-20",
         },
-
         {
             userId: user.id,
             categoryId: salaryCat.id,

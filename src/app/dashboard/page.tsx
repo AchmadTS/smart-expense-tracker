@@ -228,6 +228,31 @@ export default async function DashboardPage() {
       )
       .groupBy(transactions.categoryId, categories.name, categories.color);
 
+    const mappedCategories = categoryExpensesRaw
+      .map((item) => ({
+        category_name: item.categoryName || "Lainnya",
+        total: parseFloat(item.totalSpent || "0"),
+        color: item.categoryColor || "#94a3b8",
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    if (mappedCategories.length <= 5) {
+      categoryBreakdownData = mappedCategories;
+    } else {
+      const top5 = mappedCategories.slice(0, 5);
+      const others = mappedCategories.slice(5);
+      const otherTotal = others.reduce((sum, item) => sum + item.total, 0);
+
+      categoryBreakdownData = [
+        ...top5,
+        {
+          category_name: "Lainnya",
+          total: otherTotal,
+          color: "#94a3b8",
+        },
+      ];
+    }
+
     categoryBreakdownData = categoryExpensesRaw.map((item) => ({
       category_name: item.categoryName || "Lainnya",
       total: parseFloat(item.totalSpent || "0"),

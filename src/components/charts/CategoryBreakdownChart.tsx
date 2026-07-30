@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ResponsiveContainer, PieChart, Pie, Tooltip } from "recharts";
+import { ResponsiveContainer, PieChart, Pie } from "recharts";
 import { formatCurrency } from "@/utils/format";
 
 const GRADIENTS = [
@@ -11,11 +11,13 @@ const GRADIENTS = [
   { id: "cat-mint", from: "#6EE7B7", to: "#10B981", solid: "#10B981" },
   { id: "cat-darkteal", from: "#14B8A6", to: "#0F766E", solid: "#0F766E" },
   { id: "cat-sage", from: "#A7F3D0", to: "#047857", solid: "#047857" },
+  { id: "cat-slate", from: "#94a3b8", to: "#64748b", solid: "#64748b" },
 ];
 
 export interface CategoryBreakdownData {
   category_name: string;
   total: number | string;
+  color?: string;
 }
 
 interface CategoryBreakdownChartProps {
@@ -23,11 +25,44 @@ interface CategoryBreakdownChartProps {
   currency?: string;
 }
 
+interface CustomizedLabelProps {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  percent?: number;
+}
+
+const renderCustomizedLabel = (props: CustomizedLabelProps) => {
+  const { cx = 0, cy = 0, midAngle = 0, outerRadius = 0, percent = 0 } = props;
+  if (!percent || percent === 0) return null;
+
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius + 22;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#475569"
+      textAnchor={x > cx ? "start" : "end"}
+      dominantBaseline="central"
+      className="text-[11px] font-semibold"
+    >
+      {`${(percent * 100).toFixed(1)}%`}
+    </text>
+  );
+};
+
 export default function CategoryBreakdownChart({
   data,
   currency = "IDR",
 }: CategoryBreakdownChartProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-sm text-slate-400">
@@ -36,25 +71,25 @@ export default function CategoryBreakdownChart({
     );
   }
 
-  const top = data.slice(0, 5);
-  const formatted = top.map((d, i) => {
+  const formatted = data.map((d, i) => {
     const g = GRADIENTS[i % GRADIENTS.length];
     return {
       name: d.category_name,
       value: Number(d.total) || 0,
-      fill: `url(#${g.id})`,
-      solid: g.solid,
+      fill: d.category_name === "Lainnya" ? `url(#cat-slate)` : `url(#${g.id})`,
+      solid: d.category_name === "Lainnya" ? "#64748b" : g.solid,
     };
   });
 
-  const totalSum = formatted.reduce((acc, curr) => acc + curr.value, 0);
-  const activeItem = selectedIndex !== null ? formatted[selectedIndex] : null;
+  const totalSum = formatted.reduce((acc, curr) => acc + curr.value, 0)
+  const activeIdx = hoveredIndex !== null ? hoveredIndex : selectedIndex;
+  const activeItem = activeIdx !== null ? formatted[activeIdx] : null;
   const displayTitle = activeItem ? activeItem.name : "Pengeluaran";
   const displayValue = activeItem ? activeItem.value : totalSum;
 
   return (
     <div className="w-full select-none" onClick={() => setSelectedIndex(null)}>
-      <div className="relative h-48 w-full flex items-center justify-center">
+      <div className="relative h-56 w-full flex items-center justify-center">
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 z-10">
           <span className="text-xs font-medium text-slate-500 truncate max-w-30">
             {displayTitle}
@@ -65,7 +100,7 @@ export default function CategoryBreakdownChart({
         </div>
 
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
             <defs>
               {GRADIENTS.map((g) => (
                 <linearGradient
@@ -84,49 +119,43 @@ export default function CategoryBreakdownChart({
             <Pie
               data={formatted}
               innerRadius={45}
-              outerRadius={70}
+              outerRadius={65}
               paddingAngle={2}
               dataKey="value"
               stroke="none"
+              isAnimationActive={false}
+              label={renderCustomizedLabel}
+              labelLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
+              onMouseEnter={(_, index) => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
               onClick={(_, index, e) => {
                 e.stopPropagation();
-                setSelectedIndex(index);
-              }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 4px 12px rgba(107, 114, 128, 0.15)",
-                fontSize: "12px",
-                color: "#0f172a",
-              }}
-              itemStyle={{
-                color: "#334155",
-                fontWeight: 600,
-              }}
-              formatter={(value) => {
-                if (value === undefined || value === null) return [""];
-                const numericValue = Array.isArray(value)
-                  ? Number(value[0])
-                  : Number(value);
-                return [formatCurrency(numericValue, currency)];
+                setSelectedIndex(index === selectedIndex ? null : index);
               }}
             />
           </PieChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="mt-2 space-y-2 max-h-40 overflow-y-auto no-scrollbar"
+        onClick={(e) => e.stopPropagation()}
+      >
         {formatted.map((c, idx) => {
           const isSelected = selectedIndex === idx;
+          const isHovered = hoveredIndex === idx;
           return (
             <div
               key={c.name}
-              onClick={() => setSelectedIndex(idx)}
+              onMouseEnter={() => setHoveredIndex(idx)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() =>
+                setSelectedIndex(selectedIndex === idx ? null : idx)
+              }
               className={`flex items-center justify-between text-sm p-2 rounded-xl transition-colors cursor-pointer ${
-                isSelected ? "bg-slate-100 font-semibold" : "hover:bg-slate-50"
+                isSelected || isHovered
+                  ? "bg-slate-100 font-semibold"
+                  : "hover:bg-slate-50"
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -135,7 +164,7 @@ export default function CategoryBreakdownChart({
                   style={{ backgroundColor: c.solid }}
                 />
                 <span
-                  className={`text-xs truncate ${isSelected ? "text-slate-900 font-semibold" : "text-slate-700"}`}
+                  className={`text-xs truncate ${isSelected || isHovered ? "text-slate-900 font-semibold" : "text-slate-700"}`}
                 >
                   {c.name}
                 </span>

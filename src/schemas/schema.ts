@@ -10,6 +10,9 @@ export const users = pgTable("users", {
     currency: varchar("currency", { length: 3 }).default("IDR"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     currentChallenge: text("current_challenge"),
+    twoFactorSecret: text("two_factor_secret"),
+    isTwoFactorEnabled: boolean("is_two_factor_enabled").default(false),
+    twoFactorBackupCodes: jsonb("two_factor_backup_codes"),
 });
 
 export const categories = pgTable(

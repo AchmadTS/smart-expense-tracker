@@ -47,12 +47,12 @@ export default function MonthlyTrendChart({
         <BarChart data={formatted} barCategoryGap="35%" barGap={6}>
           <defs>
             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#A78BFA" />
-              <stop offset="100%" stopColor="#7C3AED" />
+              <stop offset="0%" stopColor="#2DD4BF" />
+              <stop offset="100%" stopColor="#0D9488" />
             </linearGradient>
             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FB923C" />
-              <stop offset="100%" stopColor="#EA580C" />
+              <stop offset="0%" stopColor="#FB7185" />
+              <stop offset="100%" stopColor="#E11D48" />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -74,12 +74,18 @@ export default function MonthlyTrendChart({
             tickFormatter={(value: number) => formatCurrency(value, currency)}
           />
           <Tooltip
-            cursor={false}
+            cursor={{ fill: "#f1f5f9" }}
             contentStyle={{
-              borderRadius: 12,
-              border: "none",
-              boxShadow: "0 4px 12px rgba(107, 114, 128, 0.15)",
-              fontSize: 12,
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+              fontSize: "12px",
+              color: "#0f172a",
+            }}
+            itemStyle={{
+              color: "#334155",
+              fontWeight: 600,
             }}
             formatter={(value) => {
               if (value === undefined || value === null) return [""];
@@ -92,20 +98,23 @@ export default function MonthlyTrendChart({
           <Legend
             wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
             iconType="circle"
+            formatter={(value) => (
+              <span style={{ color: "#6b7280", fontWeight: 500 }}>{value}</span>
+            )}
           />
           <Bar
             dataKey="income"
             name="Pemasukan"
             fill="url(#incomeGradient)"
             radius={[10, 10, 10, 10]}
-            background={{ fill: "#f1f5f9" }}
+            background={{ fill: "#f8fafc" }}
           />
           <Bar
             dataKey="expense"
             name="Pengeluaran"
             fill="url(#expenseGradient)"
             radius={[10, 10, 10, 10]}
-            background={{ fill: "#f1f5f9" }}
+            background={{ fill: "#f8fafc" }}
           />
         </BarChart>
       </ResponsiveContainer>

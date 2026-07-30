@@ -17,14 +17,41 @@ import CategoryBadge from "@/components/CategoryBadge";
 import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
 import CategoryBreakdownChart from "@/components/charts/CategoryBreakdownChart";
 import { DashboardTransaction, DashboardBudget } from "@/types/dashboard";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) redirect("/login");
+  let userIdNum: number;
+  try {
+    const secret = process.env.JWT_SECRET || "super-secret-auth-key";
+    const decoded = jwt.verify(token, secret) as { userId?: number | string };
+    userIdNum =
+      typeof decoded.userId === "string"
+        ? parseInt(decoded.userId, 10)
+        : (decoded.userId as number);
+    if (!userIdNum) throw new Error("Invalid user ID");
+  } catch {
+    redirect("/login");
+  }
+
   const currency = "IDR";
   let recentTransactions: DashboardTransaction[] = [];
   let userBudgets: DashboardBudget[] = [];
+  let monthlyTrendData: { month: string; income: number; expense: number }[] =
+    [];
+
+  let categoryBreakdownData: {
+    category_name: string;
+    total: number;
+    color: string;
+  }[] = [];
   let summary = {
     balance: 0,
     incomeThisMonth: 0,
@@ -55,6 +82,7 @@ export default async function DashboardPage() {
       })
       .from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(eq(transactions.userId, userIdNum))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
 
@@ -70,6 +98,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
+          eq(transactions.userId, userIdNum),
           eq(transactions.type, "income"),
           sql`${transactions.transactionDate} >= ${currentMonthStart}`,
           sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
@@ -81,6 +110,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
+          eq(transactions.userId, userIdNum),
           eq(transactions.type, "expense"),
           sql`${transactions.transactionDate} >= ${currentMonthStart}`,
           sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
@@ -92,6 +122,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
+          eq(transactions.userId, userIdNum),
           eq(transactions.type, "income"),
           sql`${transactions.transactionDate} >= ${lastMonthStart}`,
           sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
@@ -103,6 +134,7 @@ export default async function DashboardPage() {
       .from(transactions)
       .where(
         and(
+          eq(transactions.userId, userIdNum),
           eq(transactions.type, "expense"),
           sql`${transactions.transactionDate} >= ${lastMonthStart}`,
           sql`${transactions.transactionDate} <= ${lastMonthEnd}`,
@@ -146,6 +178,69 @@ export default async function DashboardPage() {
       savingsRate: Math.max(savingsRate, 0),
     };
 
+    const sixMonthsAgo = format(subMonths(now, 5), "yyyy-MM-01");
+    const monthlyBuckets = Array.from({ length: 6 }).map((_, i) => {
+      const d = subMonths(now, 5 - i);
+      return { month: format(d, "yyyy-MM"), income: 0, expense: 0 };
+    });
+
+    const trendTransactions = await db
+      .select({
+        amount: transactions.amount,
+        type: transactions.type,
+        transactionDate: transactions.transactionDate,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userIdNum),
+          sql`${transactions.transactionDate} >= ${sixMonthsAgo}`,
+        ),
+      );
+
+    trendTransactions.forEach((t) => {
+      const monthStr = (t.transactionDate as string).substring(0, 7);
+      const bucket = monthlyBuckets.find((m) => m.month === monthStr);
+      if (bucket) {
+        if (t.type === "income") bucket.income += parseFloat(t.amount);
+        if (t.type === "expense") bucket.expense += parseFloat(t.amount);
+      }
+    });
+
+    monthlyTrendData = monthlyBuckets;
+
+    const categoryExpensesRaw = await db
+      .select({
+        categoryId: transactions.categoryId,
+        categoryName: categories.name,
+        categoryColor: categories.color,
+        totalSpent: sum(transactions.amount),
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(
+        and(
+          eq(transactions.userId, userIdNum),
+          eq(transactions.type, "expense"),
+          sql`${transactions.transactionDate} >= ${currentMonthStart}`,
+          sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
+        ),
+      )
+      .groupBy(transactions.categoryId, categories.name, categories.color);
+
+    categoryBreakdownData = categoryExpensesRaw.map((item) => ({
+      category_name: item.categoryName || "Lainnya",
+      total: parseFloat(item.totalSpent || "0"),
+      color: item.categoryColor || "#94a3b8",
+    }));
+
+    const expenseMap = new Map(
+      categoryExpensesRaw.map((item) => [
+        item.categoryId,
+        item.totalSpent || "0",
+      ]),
+    );
+
     const rawBudgets = await db
       .select({
         id: budgets.id,
@@ -154,26 +249,8 @@ export default async function DashboardPage() {
         amount: budgets.amount,
       })
       .from(budgets)
-      .leftJoin(categories, eq(budgets.categoryId, categories.id));
-
-    const categoryExpenses = await db
-      .select({
-        categoryId: transactions.categoryId,
-        totalSpent: sum(transactions.amount),
-      })
-      .from(transactions)
-      .where(
-        and(
-          eq(transactions.type, "expense"),
-          sql`${transactions.transactionDate} >= ${currentMonthStart}`,
-          sql`${transactions.transactionDate} <= ${currentMonthEnd}`,
-        ),
-      )
-      .groupBy(transactions.categoryId);
-
-    const expenseMap = new Map(
-      categoryExpenses.map((item) => [item.categoryId, item.totalSpent || "0"]),
-    );
+      .leftJoin(categories, eq(budgets.categoryId, categories.id))
+      .where(eq(budgets.userId, userIdNum));
 
     userBudgets = rawBudgets.map((b) => ({
       id: b.id,
@@ -247,7 +324,7 @@ export default async function DashboardPage() {
               Income vs expenses, last 6 months
             </p>
           </div>
-          <MonthlyTrendChart data={[]} currency={currency} />
+          <MonthlyTrendChart data={monthlyTrendData} currency={currency} />
         </div>
         <div className="bg-white rounded-3xl border border-slate-100 p-6">
           <div className="mb-5">
@@ -256,7 +333,10 @@ export default async function DashboardPage() {
             </h2>
             <p className="text-xs text-slate-500 mt-1">Spending this month</p>
           </div>
-          <CategoryBreakdownChart data={[]} currency={currency} />
+          <CategoryBreakdownChart
+            data={categoryBreakdownData}
+            currency={currency}
+          />
         </div>
       </div>
 

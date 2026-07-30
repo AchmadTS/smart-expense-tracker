@@ -75,10 +75,16 @@ export default function CategoryBreakdownChart({
             />
             <Tooltip
               contentStyle={{
-                borderRadius: 12,
-                border: "none",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #e2e8f0",
                 boxShadow: "0 4px 12px rgba(107, 114, 128, 0.15)",
-                fontSize: 12,
+                fontSize: "12px",
+                color: "#0f172a",
+              }}
+              itemStyle={{
+                color: "#334155",
+                fontWeight: 600,
               }}
               formatter={(value) => {
                 if (value === undefined || value === null) return [""];

@@ -25,6 +25,8 @@ import {
 import { BarProps } from "@/types/user";
 import { startRegistration } from "@simplewebauthn/browser";
 import { createPortal } from "react-dom";
+import { showToast } from "@/lib/toast";
+import ToastContainer from "@/components/ui/ToastContainer";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -131,19 +133,20 @@ export default function Sidebar({ user }: BarProps) {
 
       if (verifyResult.success) {
         setIsPasskeyEnabled(true);
-        alert(
+        showToast(
           "Passkey successfully activated! You can log in using biometrics.",
+          "success",
         );
       }
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
-          alert("Passkey registration cancelled.");
+          showToast("Passkey registration cancelled.", "info");
         } else {
-          alert(`Failed to activate Passkey: ${error.message}`);
+          showToast(`Failed to activate Passkey: ${error.message}`, "error");
         }
       } else {
-        alert("An unknown system error occurred.");
+        showToast("An unknown system error occurred.", "error");
       }
     } finally {
       setIsPasskeyLoading(false);
@@ -162,7 +165,7 @@ export default function Sidebar({ user }: BarProps) {
       setIsPasskeyEnabled(false);
       setShowRemovePasskeyModal(false);
     } catch {
-      alert("An error occurred while removing passkey.");
+      showToast("An error occurred while removing passkey.", "error");
     } finally {
       setIsRemovingPasskey(false);
     }
@@ -189,14 +192,17 @@ export default function Sidebar({ user }: BarProps) {
       setShow2FASetupModal(true);
       setShowProfileMenu(false);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "A system error occurred");
+      showToast(
+        error instanceof Error ? error.message : "A system error occurred",
+        "error",
+      );
     } finally {
       setIs2FALoading(false);
     }
   };
 
   const handleVerify2FA = async () => {
-    if (otpToken.length !== 6) return alert("Enter 6 digit code");
+    if (otpToken.length !== 6) return showToast("Enter 6 digit code", "info");
 
     try {
       setIsVerifying2FA(true);
@@ -213,7 +219,10 @@ export default function Sidebar({ user }: BarProps) {
       setShow2FASetupModal(false);
       setOtpToken("");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "A system error occurred");
+      showToast(
+        error instanceof Error ? error.message : "A system error occurred",
+        "error",
+      );
     } finally {
       setIsVerifying2FA(false);
     }
@@ -231,7 +240,10 @@ export default function Sidebar({ user }: BarProps) {
       setIs2FAEnabled(false);
       setShowDisable2FAModal(false);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "A system error occurred");
+      showToast(
+        error instanceof Error ? error.message : "A system error occurred",
+        "error",
+      );
     } finally {
       setIsDisabling2FA(false);
     }
@@ -770,6 +782,7 @@ export default function Sidebar({ user }: BarProps) {
           </div>
         </div>
       )}
+      <ToastContainer />
     </>
   );
 }

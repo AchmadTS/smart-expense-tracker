@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { BarProps } from "@/types/user";
 import { startRegistration } from "@simplewebauthn/browser";
+import { showToast } from "@/lib/toast";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -94,19 +95,17 @@ export default function Topbar({ user }: BarProps) {
 
       if (verifyResult.success) {
         setIsPasskeyEnabled(true);
-        alert(
-          "Passkey successfully activated! You can log in using biometrics.",
-        );
+        showToast("Passkey successfully activated! You can log in using biometrics.", "success");
       }
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
-          alert("Passkey registration cancelled.");
+          showToast("Passkey registration cancelled.", "info");
         } else {
-          alert(`Failed to activate Passkey: ${error.message}`);
+          showToast(`Failed to activate Passkey: ${error.message}`, "error");
         }
       } else {
-        alert("An unknown system error occurred.");
+        showToast("An unknown system error occurred.", "error");
       }
     } finally {
       setIsPasskeyLoading(false);
@@ -124,7 +123,7 @@ export default function Topbar({ user }: BarProps) {
       setIsPasskeyEnabled(false);
       setShowRemovePasskeyModal(false);
     } catch {
-      alert("An error occurred while removing passkey.");
+      showToast("An error occurred while removing passkey.", "error");
     } finally {
       setIsRemovingPasskey(false);
     }

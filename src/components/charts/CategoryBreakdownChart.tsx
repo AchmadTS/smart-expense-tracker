@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ResponsiveContainer, PieChart, Pie } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { formatCurrency } from "@/utils/format";
 
 const GRADIENTS = [
@@ -81,7 +81,7 @@ export default function CategoryBreakdownChart({
     };
   });
 
-  const totalSum = formatted.reduce((acc, curr) => acc + curr.value, 0)
+  const totalSum = formatted.reduce((acc, curr) => acc + curr.value, 0);
   const activeIdx = hoveredIndex !== null ? hoveredIndex : selectedIndex;
   const activeItem = activeIdx !== null ? formatted[activeIdx] : null;
   const displayTitle = activeItem ? activeItem.name : "Pengeluaran";
@@ -132,7 +132,33 @@ export default function CategoryBreakdownChart({
                 e.stopPropagation();
                 setSelectedIndex(index === selectedIndex ? null : index);
               }}
-            />
+            >
+              {formatted.map((entry, index) => {
+                const isActive = activeIdx === index;
+                const isDimmed = activeIdx !== null && activeIdx !== index;
+
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.fill}
+                    style={{
+                      transition:
+                        "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease, opacity 0.25s ease",
+                      transformOrigin: "center center",
+                      cursor: "pointer",
+                      outline: "none",
+                      transform: isActive ? "scale(1.08)" : "scale(1)",
+                      filter: isActive
+                        ? "drop-shadow(0px 10px 16px rgba(15, 23, 42, 0.35))"
+                        : isDimmed
+                          ? "grayscale(20%)"
+                          : "none",
+                      opacity: isActive ? 1 : isDimmed ? 0.55 : 1,
+                    }}
+                  />
+                );
+              })}
+            </Pie>
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -164,7 +190,11 @@ export default function CategoryBreakdownChart({
                   style={{ backgroundColor: c.solid }}
                 />
                 <span
-                  className={`text-xs truncate ${isSelected || isHovered ? "text-slate-900 font-semibold" : "text-slate-700"}`}
+                  className={`text-xs truncate ${
+                    isSelected || isHovered
+                      ? "text-slate-900 font-semibold"
+                      : "text-slate-700"
+                  }`}
                 >
                   {c.name}
                 </span>

@@ -120,3 +120,11 @@ body {
   outline: none !important;
   box-shadow: none !important;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

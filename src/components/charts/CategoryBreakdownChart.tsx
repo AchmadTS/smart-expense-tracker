@@ -88,7 +88,13 @@ export default function CategoryBreakdownChart({
   const displayValue = activeItem ? activeItem.value : totalSum;
 
   return (
-    <div className="w-full select-none" onClick={() => setSelectedIndex(null)}>
+    <div
+      className="w-full select-none"
+      onClick={() => {
+        setSelectedIndex(null);
+        setHoveredIndex(null);
+      }}
+    >
       <div className="relative h-56 w-full flex items-center justify-center">
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 z-10">
           <span className="text-xs font-medium text-slate-500 truncate max-w-30">
@@ -131,6 +137,7 @@ export default function CategoryBreakdownChart({
               onClick={(_, index, e) => {
                 e.stopPropagation();
                 setSelectedIndex(index === selectedIndex ? null : index);
+                setHoveredIndex(null);
               }}
             >
               {formatted.map((entry, index) => {
@@ -175,9 +182,10 @@ export default function CategoryBreakdownChart({
               key={c.name}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
-              onClick={() =>
-                setSelectedIndex(selectedIndex === idx ? null : idx)
-              }
+              onClick={() => {
+                setSelectedIndex(selectedIndex === idx ? null : idx);
+                setHoveredIndex(null);
+              }}
               className={`flex items-center justify-between text-sm p-2 rounded-xl transition-colors cursor-pointer ${
                 isSelected || isHovered
                   ? "bg-slate-100 font-semibold"

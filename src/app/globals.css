@@ -106,3 +106,17 @@ body {
   opacity: 0.55;
   filter: grayscale(20%);
 }
+
+.recharts-surface:focus,
+.recharts-bar-rectangle:focus,
+.recharts-rectangle:focus {
+  outline: none !important;
+}
+
+.recharts-wrapper *:focus,
+.recharts-surface:focus,
+.recharts-pie-sector:focus,
+.recharts-sector:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

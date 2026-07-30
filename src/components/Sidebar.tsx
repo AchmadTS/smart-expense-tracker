@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { BarProps } from "@/types/user";
 import { startRegistration } from "@simplewebauthn/browser";
+import { createPortal } from "react-dom";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +48,18 @@ export default function Sidebar({ user }: BarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const initial = user?.name?.[0]?.toUpperCase() || "U";
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const securityButtonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (isSecurityExpanded && securityButtonRef.current) {
+      const rect = securityButtonRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.top,
+        left: rect.right + 8,
+      });
+    }
+  }, [isSecurityExpanded]);
 
   useEffect(() => {
     async function checkPasskeyStatus() {
@@ -205,56 +218,6 @@ export default function Sidebar({ user }: BarProps) {
         Account
       </Link>
 
-      <div className="relative">
-        <button
-          onClick={() => setIsSecurityExpanded(!isSecurityExpanded)}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
-            isSecurityExpanded
-              ? "bg-slate-50 text-slate-900"
-              : "text-slate-700 hover:bg-slate-50"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Shield size={16} className="text-slate-400" />
-            Security
-          </div>
-          <ChevronRight
-            size={15}
-            className={`transition-colors duration-200 ${isSecurityExpanded ? "rotate-90 text-slate-900" : "text-slate-400"}`}
-          />
-        </button>
-
-        {isSecurityExpanded && (
-          <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-50 animate-in fade-in slide-in-from-left-1 duration-150">
-            <button
-              onClick={handleTogglePasskey}
-              disabled={isPasskeyLoading}
-              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
-                isPasskeyLoading
-                  ? "opacity-50 cursor-wait text-slate-500"
-                  : "text-slate-700 hover:bg-slate-50 cursor-pointer"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Fingerprint size={14} className="text-teal-600" />
-                <span>
-                  {isPasskeyLoading ? "Processing..." : "Enable Passkey"}
-                </span>
-              </div>
-              <div
-                className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"}`}
-              >
-                <div
-                  className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${isPasskeyEnabled ? "translate-x-3" : "translate-x-0"}`}
-                />
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="my-1 border-t border-slate-100"></div>
-
       <button
         onClick={() => setIsDarkMode(!isDarkMode)}
         className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
@@ -271,6 +234,68 @@ export default function Sidebar({ user }: BarProps) {
           ></div>
         </div>
       </button>
+
+      <div className="my-1 border-t border-slate-100"></div>
+      <div className="relative">
+        <button
+          ref={securityButtonRef}
+          onClick={() => setIsSecurityExpanded(!isSecurityExpanded)}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition cursor-pointer ${
+            isSecurityExpanded
+              ? "bg-slate-50 text-slate-900"
+              : "text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Shield size={16} className="text-slate-400" />
+            Security
+          </div>
+          <ChevronRight
+            size={15}
+            className={`transition-colors duration-200 ${
+              isSecurityExpanded ? "rotate-90 text-slate-900" : "text-slate-400"
+            }`}
+          />
+        </button>
+
+        {isSecurityExpanded &&
+          typeof window !== "undefined" &&
+          createPortal(
+            <div
+              style={{ top: menuPos.top, left: menuPos.left }}
+              className="fixed w-48 bg-white rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] p-1.5 z-9999 animate-in fade-in slide-in-from-left-1 duration-150"
+            >
+              <button
+                onClick={handleTogglePasskey}
+                disabled={isPasskeyLoading}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
+                  isPasskeyLoading
+                    ? "opacity-50 cursor-wait text-slate-500"
+                    : "text-slate-700 hover:bg-slate-50 cursor-pointer"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Fingerprint size={14} className="text-teal-600" />
+                  <span>
+                    {isPasskeyLoading ? "Processing..." : "Enable Passkey"}
+                  </span>
+                </div>
+                <div
+                  className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${
+                    isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${
+                      isPasskeyEnabled ? "translate-x-3" : "translate-x-0"
+                    }`}
+                  />
+                </div>
+              </button>
+            </div>,
+            document.body,
+          )}
+      </div>
 
       <div className="my-1 border-t border-slate-100"></div>
 

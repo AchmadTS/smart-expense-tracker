@@ -25,7 +25,7 @@ export async function requestPasswordReset(email: string) {
         .limit(1);
 
     if (!user) {
-        throw new Error("Email is not registered in the system.");
+        return { error: "Email is not registered in the system." };
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -135,7 +135,7 @@ export async function requestPasswordReset(email: string) {
         });
 
     } catch {
-        throw new Error("Failed to send OTP email. Please check server logs.");
+        return { error: "Failed to send OTP email. Please check server logs." };
     }
 
     return { success: true, message: "OTP code has been sent!" };
@@ -149,7 +149,7 @@ export async function verifyPasswordResetOtp(email: string, otpCode: string) {
         .limit(1);
 
     if (!user) {
-        throw new Error("User not found.");
+        return { error: "User not found." };
     }
 
     const [resetRecord] = await db
@@ -159,15 +159,15 @@ export async function verifyPasswordResetOtp(email: string, otpCode: string) {
         .limit(1);
 
     if (!resetRecord || !resetRecord.expiresAt) {
-        throw new Error("OTP code is invalid or has expired.");
+        return { error: "OTP code is invalid or has expired." };
     }
 
     if (new Date() > new Date(resetRecord.expiresAt)) {
-        throw new Error("The OTP code has expired. Please resend it.");
+        return { error: "The OTP code has expired. Please resend it." };
     }
 
     if (resetRecord.otp !== otpCode) {
-        throw new Error("Wrong OTP code.");
+        return { error: "Wrong OTP code." };
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -184,7 +184,7 @@ export async function verifyPasswordResetOtp(email: string, otpCode: string) {
 
 export async function resetPassword(token: string, newPassword: string) {
     if (!token || !newPassword) {
-        throw new Error("Token and new password are required.");
+        return { error: "Token and new password are required." };
     }
 
     const [record] = await db
@@ -194,11 +194,11 @@ export async function resetPassword(token: string, newPassword: string) {
         .limit(1);
 
     if (!record || !record.expiresAt) {
-        throw new Error("Invalid or expired session token.");
+        return { error: "Invalid or expired session token." };
     }
 
     if (new Date() > new Date(record.expiresAt)) {
-        throw new Error("Reset session has expired. Please restart the process.");
+        return { error: "Reset session has expired. Please restart the process." };
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

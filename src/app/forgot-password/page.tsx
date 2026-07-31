@@ -71,7 +71,13 @@ export default function ForgotPassword() {
   const onSubmitEmail = async (data: EmailFormData) => {
     setLoading(true);
     try {
-      await requestPasswordReset(data.email);
+      const result = await requestPasswordReset(data.email);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
       localStorage.setItem("forgot_step", "OTP");
       localStorage.setItem("forgot_email", data.email);
       localStorage.setItem(
@@ -83,9 +89,8 @@ export default function ForgotPassword() {
       setStep("OTP");
       setCountdown(60);
       toast.success("OTP code has been sent!");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-      toast.error(message);
+    } catch {
+      toast.error("Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -118,13 +123,20 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       const res = await verifyPasswordResetOtp(userEmail, otpCode);
-      localStorage.setItem("reset_token", res.token);
+
+      if (res.error) {
+        toast.error(res.error);
+        setOtp(Array(6).fill(""));
+        inputRefs.current[0]?.focus();
+        return;
+      }
+
+      localStorage.setItem("reset_token", res.token as string);
       localStorage.setItem("forgot_step", "SUCCESS");
       setStep("SUCCESS");
       toast.success("Verification Successful!");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Wrong OTP code";
-      toast.error(message);
+    } catch {
+      toast.error("An unexpected error occurred during verification.");
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -136,16 +148,21 @@ export default function ForgotPassword() {
     if (!canResend) return;
     setCountdown(60);
     try {
-      await requestPasswordReset(userEmail);
+      const result = await requestPasswordReset(userEmail);
+
+      if (result.error) {
+        toast.error(result.error);
+        setCountdown(0);
+        return;
+      }
+
       localStorage.setItem(
         "otp_resend_expiry",
         (new Date().getTime() + 60000).toString(),
       );
       toast.success("New OTP code has been resent!");
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to resend OTP";
-      toast.error(message);
+    } catch {
+      toast.error("Failed to resend OTP. Please try again.");
       setCountdown(0);
       localStorage.removeItem("otp_resend_expiry");
     }

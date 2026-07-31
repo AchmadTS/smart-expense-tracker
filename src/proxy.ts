@@ -1,55 +1,64 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function isTokenExpired(token: string) {
-    try {
-        const payloadBase64 = token.split('.')[1];
-        if (!payloadBase64) return true;
-
-        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-        const decodedJson = atob(base64);
-        const payload = JSON.parse(decodedJson);
-        const currentTime = Math.floor(Date.now() / 1000);
-        return payload.exp < currentTime;
-    } catch {
-        return true;
-    }
-}
-
 export function proxy(request: NextRequest) {
-    const tokenCookie = request.cookies.get("token");
-    const token = tokenCookie?.value;
+    const token = request.cookies.get("token")?.value;
     const { pathname } = request.nextUrl;
-    const isExpired = token ? isTokenExpired(token) : true;
-    const protectedRoutes = ["/dashboard", "/transactions", "/budgets"];
-    const isProtectedRoute = protectedRoutes.some((route) =>
-        pathname === route || pathname.startsWith(`${route}/`)
-    );
+    const isProtectedRoute = pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/transactions") ||
+        pathname.startsWith("/budgets");
 
-    const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
-    const isAuthRoute = authRoutes.some((route) =>
-        pathname === route || pathname.startsWith(`${route}/`)
-    );
+    const isAuthRoute = pathname.startsWith("/login") ||
+        pathname.startsWith("/register") ||
+        pathname.startsWith("/forgot-password") ||
+        pathname.startsWith("/reset-password");
 
-    if (isProtectedRoute && (!token || isExpired)) {
-        const loginUrl = new URL("/login", request.url);
-        const response = NextResponse.redirect(loginUrl);
-
-        if (token) {
-            response.cookies.delete("token");
-        }
+    const wipeCookie = (response: NextResponse) => {
+        response.cookies.set("token", "", {
+            maxAge: 0,
+            path: "/"
+        });
         return response;
+    };
+
+    if (isProtectedRoute && !token) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return wipeCookie(NextResponse.redirect(url));
+    }
+
+    let isExpired = false;
+    if (token) {
+        try {
+            const parts = token.split(".");
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+                if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+                    isExpired = true;
+                }
+            } else {
+                isExpired = true;
+            }
+        } catch {
+            isExpired = true;
+        }
+    }
+
+    if (isExpired) {
+        if (isProtectedRoute) {
+            const url = request.nextUrl.clone();
+            url.pathname = "/login";
+            return wipeCookie(NextResponse.redirect(url));
+        }
+        if (isAuthRoute) {
+            return wipeCookie(NextResponse.next());
+        }
     }
 
     if (isAuthRoute && token && !isExpired) {
-        const dashboardUrl = new URL("/dashboard", request.url);
-        return NextResponse.redirect(dashboardUrl);
-    }
-
-    if (isAuthRoute && token && isExpired) {
-        const response = NextResponse.next();
-        response.cookies.delete("token");
-        return response;
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
     }
 
     return NextResponse.next();

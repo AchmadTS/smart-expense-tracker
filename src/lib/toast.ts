@@ -1,18 +1,32 @@
 type ToastType = "success" | "error" | "info";
 
-type Listener = (toast: { message: string; type: ToastType } | null) => void;
+export type ToastPayload = {
+    id: string;
+    message: string;
+    type: ToastType;
+};
 
-let listener: Listener | null = null;
+type Listener = (toast: ToastPayload | null) => void;
+const listeners = new Set<Listener>();
 
 export const showToast = (message: string, type: ToastType = "error") => {
-    if (listener) {
-        listener({ message, type });
-    }
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const toast = { id, message, type };
+
+    listeners.forEach((listener) => {
+        listener(toast);
+    });
+};
+
+export const dismissToast = () => {
+    listeners.forEach((listener) => {
+        listener(null);
+    });
 };
 
 export const subscribeToast = (callback: Listener) => {
-    listener = callback;
+    listeners.add(callback);
     return () => {
-        listener = null;
+        listeners.delete(callback);
     };
 };

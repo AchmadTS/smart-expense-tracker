@@ -49,7 +49,7 @@ export default function Topbar({ user }: BarProps) {
   const [isRemovingPasskey, setIsRemovingPasskey] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
+
   const [is2FAEnabled, setIs2FAEnabled] = useState<boolean>(
     user?.isTwoFactorEnabled || false,
   );
@@ -490,7 +490,7 @@ export default function Topbar({ user }: BarProps) {
                   )}
                 </div>
                 <p className="text-sm text-slate-600">
-                  <span className="font-semibold text-slate-900">1.</span> Scan
+                <span className="font-semibold text-slate-900">1.</span> Scan
                   this QR code with an app like{" "}
                   <span className="font-semibold">Google Authenticator</span> or{" "}
                   <span className="font-semibold">Authy</span>.

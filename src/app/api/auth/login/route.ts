@@ -20,10 +20,7 @@ export async function POST(request: Request) {
             const errorMessages = validationResult.error.issues
                 .map((err) => err.message)
                 .join(", ");
-            return NextResponse.json(
-                { message: errorMessages },
-                { status: 400 }
-            );
+            return NextResponse.json({ message: errorMessages }, { status: 400 });
         }
 
         const { email, password } = validationResult.data;
@@ -34,18 +31,25 @@ export async function POST(request: Request) {
             .limit(1);
 
         if (!user) {
-            return NextResponse.json(
-                { message: "Invalid email or password" },
-                { status: 401 }
-            );
+            return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         if (!isPasswordValid) {
-            return NextResponse.json(
-                { message: "Invalid email or password" },
-                { status: 401 }
+            return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
+        }
+
+        if (user.isTwoFactorEnabled) {
+            const tempToken = jwt.sign(
+                { userId: user.id, is2FA: true },
+                JWT_SECRET,
+                { expiresIn: "5m" }
             );
+            return NextResponse.json({
+                requires2FA: true,
+                tempToken,
+                email: user.email,
+            });
         }
 
         const token = jwt.sign(

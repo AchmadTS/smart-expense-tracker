@@ -22,24 +22,16 @@ export async function proxy(request: NextRequest) {
         return response;
     };
 
-    if (isProtectedRoute && !token) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        return wipeCookie(NextResponse.redirect(url));
-    }
-
     let isTokenValid = false;
 
     if (token) {
         try {
             const jwtSecret = process.env.JWT_SECRET;
-            if (!jwtSecret) {
-                throw new Error("JWT_SECRET is missing");
+            if (jwtSecret) {
+                const secret = new TextEncoder().encode(jwtSecret);
+                await jwtVerify(token, secret);
+                isTokenValid = true;
             }
-
-            const secret = new TextEncoder().encode(jwtSecret);
-            await jwtVerify(token, secret);
-            isTokenValid = true;
         } catch {
             isTokenValid = false;
         }
@@ -51,9 +43,15 @@ export async function proxy(request: NextRequest) {
             url.pathname = "/login";
             return wipeCookie(NextResponse.redirect(url));
         }
-        if (isAuthRoute) {
-            return wipeCookie(NextResponse.next());
-        }
+
+        const response = NextResponse.next();
+        return wipeCookie(response);
+    }
+
+    if (isProtectedRoute && !token) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return NextResponse.redirect(url);
     }
 
     if (isAuthRoute && isTokenValid) {

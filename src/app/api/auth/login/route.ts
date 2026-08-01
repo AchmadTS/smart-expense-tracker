@@ -3,10 +3,9 @@ import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { SignJWT } from "jose";
 import { z } from "zod";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
 const loginBodySchema = z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -39,12 +38,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
         }
 
+        if (!process.env.JWT_SECRET) {
+            console.error("CRITICAL: JWT_SECRET is missing.");
+            return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+        }
+
+        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+
         if (user.isTwoFactorEnabled) {
-            const tempToken = jwt.sign(
-                { userId: user.id, is2FA: true },
-                JWT_SECRET,
-                { expiresIn: "5m" }
-            );
+            const tempToken = await new SignJWT({ userId: user.id, is2FA: true })
+                .setProtectedHeader({ alg: "HS256" })
+                .setIssuedAt()
+                .setExpirationTime("5m")
+                .sign(secretKey);
+
             return NextResponse.json({
                 requires2FA: true,
                 tempToken,
@@ -52,13 +59,14 @@ export async function POST(request: Request) {
             });
         }
 
-        const token = jwt.sign(
-            { userId: user.id, email: user.email },
-            JWT_SECRET,
-            { expiresIn: "7d" }
-        );
+        const token = await new SignJWT({ userId: user.id, email: user.email })
+            .setProtectedHeader({ alg: "HS256" })
+            .setIssuedAt()
+            .setExpirationTime("7d")
+            .sign(secretKey);
 
         const response = NextResponse.json({
+            success: true,
             token,
             user: {
                 id: user.id,
@@ -73,13 +81,15 @@ export async function POST(request: Request) {
             value: token,
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 7,
         });
 
         return response;
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Internal server error";
-        return NextResponse.json({ message: errorMessage }, { status: 500 });
+
+    } catch (error: unknown) {
+        console.error("Login Error:", error);
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }

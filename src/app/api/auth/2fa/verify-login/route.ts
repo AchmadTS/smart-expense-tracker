@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
-import jwt from "jsonwebtoken";
+import { jwtVerify, SignJWT } from "jose";
 import { verify } from "otplib";
-
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
 
 export async function POST(request: Request) {
     try {
@@ -15,8 +13,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Token and code are required" }, { status: 400 });
         }
 
-        const decoded = jwt.verify(tempToken, JWT_SECRET) as { userId: string; is2FA: boolean };
-        if (!decoded.is2FA) {
+        if (!process.env.JWT_SECRET) {
+            console.error("CRITICAL: JWT_SECRET is missing.");
+            return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+        }
+
+        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload: decoded } = await jwtVerify(tempToken, secretKey);
+
+        if (!decoded.is2FA || typeof decoded.userId !== "string") {
             return NextResponse.json({ message: "Invalid token type" }, { status: 400 });
         }
 
@@ -30,8 +35,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Invalid user or 2FA not setup" }, { status: 400 });
         }
 
+        const cleanCode = code.replace(/\s+/g, "");
         const result = await verify({
-            token: code,
+            token: cleanCode,
             secret: user.twoFactorSecret
         });
 
@@ -39,11 +45,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Invalid 6-digit code. Try again." }, { status: 400 });
         }
 
-        const token = jwt.sign(
-            { userId: user.id, email: user.email },
-            JWT_SECRET,
-            { expiresIn: "7d" }
-        );
+        const token = await new SignJWT({ userId: user.id, email: user.email })
+            .setProtectedHeader({ alg: "HS256" })
+            .setIssuedAt()
+            .setExpirationTime("7d")
+            .sign(secretKey);
 
         const response = NextResponse.json({
             success: true,
@@ -61,13 +67,22 @@ export async function POST(request: Request) {
             value: token,
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 7,
         });
 
         return response;
-    } catch (error) {
+    } catch (error: unknown) {
+        const isAuthError =
+            error instanceof Error &&
+            (error.name === 'JWTExpired' || error.name === 'JWSSignatureVerificationFailed' || error.name === 'JWTInvalid');
+
+        if (isAuthError) {
+            return NextResponse.json({ message: "Session expired or invalid" }, { status: 401 });
+        }
+
         console.error("Verify Login 2FA Error:", error);
-        return NextResponse.json({ message: "Session expired or invalid" }, { status: 401 });
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }

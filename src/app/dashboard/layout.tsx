@@ -41,7 +41,7 @@ export default async function DashboardLayout({
       }
     }
   } catch {
-    redirect("/api/auth/clear-cookie");
+    redirect("/api/auth/logout");
   }
 
   if (!currentUser) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
@@ -17,22 +17,43 @@ export async function POST(request: Request) {
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
 
-        if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!token) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-        const secretJwt = process.env.JWT_SECRET || "super-secret-auth-key";
-        const decoded = jwt.verify(token, secretJwt) as { userId: string };
-        const userRecord = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+        if (!process.env.JWT_SECRET) {
+            console.error("CRITICAL: JWT_SECRET is missing.");
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        }
 
-        if (userRecord.length === 0) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload: decoded } = await jwtVerify(token, secretKey);
 
-        const currentUser = userRecord[0];
+        if (!decoded.userId || typeof decoded.userId !== "string") {
+            return NextResponse.json({ error: "Invalid token format" }, { status: 401 });
+        }
+
+        const [currentUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, decoded.userId))
+            .limit(1);
+
+        if (!currentUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
 
         if (!currentUser.twoFactorSecret) {
             return NextResponse.json({ error: "2FA system has not been initialized" }, { status: 400 });
         }
 
+        if (currentUser.isTwoFactorEnabled) {
+            return NextResponse.json({ error: "2FA is already enabled" }, { status: 400 });
+        }
+
+        const cleanOtpToken = otpToken.replace(/\s+/g, "");
         const result = await verify({
-            token: otpToken,
+            token: cleanOtpToken,
             secret: currentUser.twoFactorSecret,
         });
 
@@ -46,8 +67,16 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true, message: "2FA successfully enabled!" });
 
-    } catch (error) {
-        console.error("2FA Verify Error:", error);
-        return NextResponse.json({ error: "Failed to verify 2FA" }, { status: 500 });
+    } catch (error: unknown) {
+        const isAuthError =
+            error instanceof Error &&
+            (error.name === 'JWTExpired' || error.name === 'JWSSignatureVerificationFailed' || error.name === 'JWTInvalid');
+
+        if (isAuthError) {
+            return NextResponse.json({ error: "Session expired or invalid. Please login again." }, { status: 401 });
+        }
+
+        console.error("2FA Verify Setup Error:", error);
+        return NextResponse.json({ error: "Failed to verify 2FA setup" }, { status: 500 });
     }
 }

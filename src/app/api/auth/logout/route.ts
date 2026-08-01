@@ -4,19 +4,14 @@ import { cookies } from "next/headers";
 export async function POST() {
     try {
         const cookieStore = await cookies();
-        cookieStore.set({
-            name: "token",
-            value: "",
-            path: "/",
-            expires: new Date(0),
-            maxAge: 0,
-        });
+        cookieStore.delete("token");
 
         return NextResponse.json(
             { success: true, message: "Logged out successfully" },
             { status: 200 }
         );
-    } catch {
+    } catch (error: unknown) {
+        console.error("Logout Error:", error);
         return NextResponse.json(
             { success: false, message: "Internal server error" },
             { status: 500 }

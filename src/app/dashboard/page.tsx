@@ -17,29 +17,22 @@ import CategoryBadge from "@/components/CategoryBadge";
 import MonthlyTrendChart from "@/components/charts/MonthlyTrendChart";
 import CategoryBreakdownChart from "@/components/charts/CategoryBreakdownChart";
 import { DashboardTransaction, DashboardBudget } from "@/types/dashboard";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { redirect } from "next/navigation";
+import { getUserFromSession } from "@/services/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) redirect("/login");
+  const user = await getUserFromSession();
 
-  let userId: string;
-  try {
-    const secret = process.env.JWT_SECRET || "super-secret-auth-key";
-    const decoded = jwt.verify(token, secret) as { userId?: string };
-    userId = decoded.userId as string;
-    if (!userId) throw new Error("Invalid user ID");
-  } catch {
+  if (!user) {
     redirect("/login");
   }
 
-  const currency = "IDR";
+  const userId = user.id;
+  const currency = (user as { currency?: string | null }).currency || "IDR";
+
   let recentTransactions: DashboardTransaction[] = [];
   let userBudgets: DashboardBudget[] = [];
   let monthlyTrendData: { month: string; income: number; expense: number }[] =

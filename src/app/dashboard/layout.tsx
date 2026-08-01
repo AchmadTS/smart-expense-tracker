@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -18,26 +18,31 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  let currentUser = null;
-
   if (!token) {
     redirect("/login");
   }
 
-  try {
-    const secret = process.env.JWT_SECRET || "super-secret-auth-key";
-    const decoded = jwt.verify(token, secret) as { userId?: string };
+  let currentUser = null;
 
-    if (decoded?.userId) {
-      const userId = decoded.userId;
-      const result = await db
+  try {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT_SECRET is missing");
+    }
+
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as string;
+
+    if (userId) {
+      const [result] = await db
         .select()
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);
 
-      if (result.length > 0) {
-        currentUser = result[0];
+      if (result) {
+        currentUser = result;
       }
     }
   } catch {
@@ -45,7 +50,7 @@ export default async function DashboardLayout({
   }
 
   if (!currentUser) {
-    redirect("/login");
+    redirect("/api/auth/logout");
   }
 
   return (

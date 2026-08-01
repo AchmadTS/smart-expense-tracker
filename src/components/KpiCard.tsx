@@ -60,7 +60,7 @@ export default function KpiCard({
               className={`text-xs font-semibold shrink-0 inline-flex items-center gap-0.5 ${positive ? "text-emerald-600" : "text-rose-600"}`}
             >
               {positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              {Math.abs(delta).toFixed(1)}%
+              {Math.abs(delta).toFixed(2)}%
             </span>
           )}
         </div>

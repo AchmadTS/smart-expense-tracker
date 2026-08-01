@@ -61,7 +61,7 @@ export default async function DashboardPage() {
         />
         <KpiCard
           label="Savings Rate"
-          value={`${data.summary.savingsRate.toFixed(1)}%`}
+          value={`${data.summary.savingsRate.toFixed(2)}%`}
           icon={PiggyBank}
           accent="blue"
         />
@@ -190,7 +190,7 @@ export default async function DashboardPage() {
                       className="text-sm font-bold"
                       style={{ color: data.aggColor }}
                     >
-                      {data.aggPct.toFixed(0)}%
+                      {data.aggPct.toFixed(2)}%
                     </div>
                     <div className="text-[10px] text-slate-500">used</div>
                   </div>

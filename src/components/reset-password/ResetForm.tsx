@@ -1,0 +1,323 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
+import { Eye, EyeOff, Sparkles, ArrowLeft, Clock } from "lucide-react";
+import { motion } from "framer-motion";
+import Spinner from "@/components/Spinner";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { resetPassword } from "@/services/auth";
+
+const resetSchema = z
+  .object({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(6, "Confirm password minimum 6 characters"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Password does not match",
+    path: ["confirmPassword"],
+  });
+
+type ResetFormData = z.infer<typeof resetSchema>;
+
+export default function ResetForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlToken = searchParams.get("token");
+  const [token] = useState<string>(() => {
+    if (urlToken) return urlToken;
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("reset_token") || "";
+    }
+    return "";
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  const redirectToOrigin = useCallback(() => {
+    const lastPage =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("last_auth_page")
+        : "";
+    if (lastPage === "/register") {
+      router.push("/register");
+    } else if (lastPage === "/forgot-password") {
+      router.push("/forgot-password");
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    const activeToken =
+      urlToken ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("reset_token")
+        : null);
+
+    if (!activeToken) {
+      setTimeout(() => {
+        toast.error(
+          "Invalid session. Please authenticate or restart the process.",
+        );
+        redirectToOrigin();
+      }, 0);
+      return;
+    }
+
+    let expiry = localStorage.getItem("reset_expiry");
+    if (!expiry) {
+      expiry = (new Date().getTime() + 10 * 60 * 1000).toString();
+      localStorage.setItem("reset_expiry", expiry);
+    }
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const remaining = Math.floor((parseInt(expiry as string) - now) / 1000);
+
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        localStorage.removeItem("reset_token");
+        localStorage.removeItem("reset_expiry");
+        toast.error("Session expired. Please restart the process.");
+        redirectToOrigin();
+      } else {
+        setTimeLeft(remaining);
+      }
+    };
+
+    setTimeout(updateTimer, 0);
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [urlToken, redirectToOrigin]);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { password: "", confirmPassword: "" },
+  });
+
+  const passwordValue = useWatch({ control, name: "password" }) || "";
+
+  const getPasswordStrength = (pwd: string) => {
+    let score = 0;
+    if (!pwd) return 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    return score;
+  };
+
+  const passwordStrength = getPasswordStrength(passwordValue);
+
+  const handleGeneratePassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const specials = "!@#$%^&*()_+";
+    const chars = [
+      uppercase[Math.floor(Math.random() * uppercase.length)],
+      lowercase[Math.floor(Math.random() * lowercase.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      specials[Math.floor(Math.random() * specials.length)],
+    ];
+    const allChars = uppercase + lowercase + numbers + specials;
+    for (let i = chars.length; i < 12; i++) {
+      chars.push(allChars[Math.floor(Math.random() * allChars.length)]);
+    }
+    const generated = chars.sort(() => Math.random() - 0.5).join("");
+    setValue("password", generated, { shouldValidate: true });
+    setValue("confirmPassword", generated, { shouldValidate: true });
+    setShowPassword(true);
+    toast.success("Strong password successfully created!");
+  };
+
+  const onSubmit = async (data: ResetFormData) => {
+    if (!token) {
+      toast.error("Invalid session.");
+      redirectToOrigin();
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(token, data.password);
+      localStorage.removeItem("reset_token");
+      localStorage.removeItem("reset_expiry");
+      sessionStorage.removeItem("last_auth_page");
+      toast.success("Password changed successfully!");
+      router.push("/login");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to reset password, please try again.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full max-w-md"
+    >
+      <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">
+        Create New Password
+      </h2>
+
+      <div className="flex items-start justify-between mb-10 gap-4">
+        <p className="text-slate-500 text-sm">
+          Your new password must be unique and different from your previous
+          password.
+        </p>
+        {timeLeft !== null && (
+          <div
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${timeLeft < 60 ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}
+          >
+            <Clock size={16} />
+            {formatTime(timeLeft)}
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold text-slate-700">
+              New Password
+            </label>
+            {passwordStrength < 4 && (
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1 transition cursor-pointer"
+              >
+                <Sparkles size={12} /> Generate password
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              {...register("password")}
+              className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
+              placeholder="Minimum 6 characters"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-xs text-rose-500 mt-1 pl-1">
+              {errors.password.message}
+            </p>
+          )}
+
+          {passwordValue && (
+            <div className="space-y-1.5 pt-1">
+              <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                <div
+                  className={`rounded-full transition-all duration-300 ${passwordStrength >= 1 ? "bg-teal-500" : "bg-slate-200"}`}
+                />
+                <div
+                  className={`rounded-full transition-all duration-300 ${passwordStrength >= 2 ? "bg-teal-500" : "bg-slate-200"}`}
+                />
+                <div
+                  className={`rounded-full transition-all duration-300 ${passwordStrength >= 3 ? "bg-teal-500" : "bg-slate-200"}`}
+                />
+                <div
+                  className={`rounded-full transition-all duration-300 ${passwordStrength >= 4 ? "bg-teal-500" : "bg-slate-200"}`}
+                />
+              </div>
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-slate-500">
+                  {passwordStrength <= 1 && "Weak password"}
+                  {passwordStrength === 2 && "Fair password"}
+                  {passwordStrength === 3 && "Good password"}
+                  {passwordStrength === 4 && "Strong password ✨"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-700">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              {...register("confirmPassword")}
+              className={`w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition ${errors.confirmPassword ? "border-rose-500 focus:border-rose-500" : "border-transparent focus:border-teal-500"}`}
+              placeholder="Repeat new password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              tabIndex={-1}
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-xs text-rose-500 mt-1 pl-1">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || timeLeft === 0}
+          className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-4"
+        >
+          {loading ? (
+            <>
+              <Spinner size="sm" /> Saving...
+            </>
+          ) : (
+            "Save New Password"
+          )}
+        </button>
+      </form>
+
+      <div className="mt-8 text-center">
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition"
+        >
+          <ArrowLeft size={16} /> Back to Login
+        </Link>
+      </div>
+    </motion.div>
+  );
+}

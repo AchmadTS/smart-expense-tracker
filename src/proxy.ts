@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const token = request.cookies.get("token")?.value;
     const { pathname } = request.nextUrl;
-    const isProtectedRoute = pathname.startsWith("/dashboard") ||
+
+    const isProtectedRoute =
+        pathname.startsWith("/dashboard") ||
         pathname.startsWith("/transactions") ||
         pathname.startsWith("/budgets");
 
-    const isAuthRoute = pathname.startsWith("/login") ||
+    const isAuthRoute =
+        pathname.startsWith("/login") ||
         pathname.startsWith("/register") ||
         pathname.startsWith("/forgot-password") ||
         pathname.startsWith("/reset-password");
 
     const wipeCookie = (response: NextResponse) => {
-        response.cookies.set("token", "", {
-            maxAge: 0,
-            path: "/"
-        });
+        response.cookies.delete("token");
         return response;
     };
 
@@ -27,24 +28,19 @@ export function proxy(request: NextRequest) {
         return wipeCookie(NextResponse.redirect(url));
     }
 
-    let isExpired = false;
+    let isTokenValid = false;
+
     if (token) {
         try {
-            const parts = token.split(".");
-            if (parts.length === 3) {
-                const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-                if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-                    isExpired = true;
-                }
-            } else {
-                isExpired = true;
-            }
+            const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+            await jwtVerify(token, secret);
+            isTokenValid = true;
         } catch {
-            isExpired = true;
+            isTokenValid = false;
         }
     }
 
-    if (isExpired) {
+    if (token && !isTokenValid) {
         if (isProtectedRoute) {
             const url = request.nextUrl.clone();
             url.pathname = "/login";
@@ -55,7 +51,7 @@ export function proxy(request: NextRequest) {
         }
     }
 
-    if (isAuthRoute && token && !isExpired) {
+    if (isAuthRoute && isTokenValid) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard";
         return NextResponse.redirect(url);
@@ -66,15 +62,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        "/dashboard",
-        "/dashboard/:path*",
-        "/transactions",
-        "/transactions/:path*",
-        "/budgets",
-        "/budgets/:path*",
-        "/login",
-        "/register",
-        "/forgot-password",
-        "/reset-password",
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
     ],
 };

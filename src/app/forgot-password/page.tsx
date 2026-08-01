@@ -19,7 +19,7 @@ export default function ForgotPassword() {
 
   useEffect(() => {
     sessionStorage.setItem("last_auth_page", window.location.pathname);
-    
+
     const timer = setTimeout(() => {
       const savedStep = localStorage.getItem("forgot_step") as Step;
       const savedEmail = localStorage.getItem("forgot_email");
@@ -54,6 +54,10 @@ export default function ForgotPassword() {
 
   const handleOtpSuccess = (token: string) => {
     localStorage.setItem("reset_token", token);
+    localStorage.setItem(
+      `reset_expiry_${token}`,
+      (new Date().getTime() + 10 * 60 * 1000).toString(),
+    );
     localStorage.setItem("forgot_step", "SUCCESS");
     setStep("SUCCESS");
   };

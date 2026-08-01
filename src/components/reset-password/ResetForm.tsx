@@ -56,13 +56,17 @@ export default function ResetForm() {
   }, [router]);
 
   useEffect(() => {
-    const activeToken =
-      urlToken ||
-      (typeof window !== "undefined"
+    const storedToken =
+      typeof window !== "undefined"
         ? localStorage.getItem("reset_token")
-        : null);
+        : null;
+    const activeToken = urlToken || storedToken;
 
-    if (!activeToken) {
+    if (
+      !activeToken ||
+      !storedToken ||
+      (urlToken && urlToken !== storedToken)
+    ) {
       setTimeout(() => {
         toast.error(
           "Invalid session. Please authenticate or restart the process.",
@@ -72,20 +76,40 @@ export default function ResetForm() {
       return;
     }
 
-    let expiry = localStorage.getItem("reset_expiry");
-    if (!expiry) {
-      expiry = (new Date().getTime() + 10 * 60 * 1000).toString();
-      localStorage.setItem("reset_expiry", expiry);
+    const tokenStatus = localStorage.getItem(`token_status_${activeToken}`);
+    if (tokenStatus === "USED" || tokenStatus === "EXPIRED") {
+      setTimeout(() => {
+        toast.error("This reset link has expired or has already been used.");
+        redirectToOrigin();
+      }, 0);
+      return;
     }
 
+    const expiryKey = `reset_expiry_${activeToken}`;
+    const expiry = localStorage.getItem(expiryKey);
+
+    if (!expiry) {
+      localStorage.setItem(`token_status_${activeToken}`, "EXPIRED");
+      localStorage.removeItem("reset_token");
+      setTimeout(() => {
+        toast.error(
+          "Invalid or expired reset link. Please restart the process.",
+        );
+        redirectToOrigin();
+      }, 0);
+      return;
+    }
+
+    const expiryTime = parseInt(expiry, 10);
     const updateTimer = () => {
-      const now = new Date().getTime();
-      const remaining = Math.floor((parseInt(expiry as string) - now) / 1000);
+      const currentTime = new Date().getTime();
+      const remaining = Math.floor((expiryTime - currentTime) / 1000);
 
       if (remaining <= 0) {
         setTimeLeft(0);
+        localStorage.setItem(`token_status_${activeToken}`, "EXPIRED");
         localStorage.removeItem("reset_token");
-        localStorage.removeItem("reset_expiry");
+        localStorage.removeItem(expiryKey);
         toast.error("Session expired. Please restart the process.");
         redirectToOrigin();
       } else {
@@ -154,8 +178,10 @@ export default function ResetForm() {
     setLoading(true);
     try {
       await resetPassword(token, data.password);
+
+      localStorage.setItem(`token_status_${token}`, "USED");
       localStorage.removeItem("reset_token");
-      localStorage.removeItem("reset_expiry");
+      localStorage.removeItem(`reset_expiry_${token}`);
       sessionStorage.removeItem("last_auth_page");
       toast.success("Password changed successfully!");
       router.push("/login");

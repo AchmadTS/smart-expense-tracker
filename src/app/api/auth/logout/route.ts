@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+export async function GET(request: Request) {
+    const url = new URL("/login", request.url);
+    const response = NextResponse.redirect(url);
+    
+    response.cookies.set("token", "", {
+        maxAge: 0,
+        path: "/",
+    });
+
+    return response;
+}
+
 export async function POST() {
     try {
         const cookieStore = await cookies();

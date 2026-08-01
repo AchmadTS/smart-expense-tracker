@@ -4,8 +4,10 @@ import { cookies } from "next/headers";
 
 export async function GET() {
     try {
+        const rawDomain = process.env.NEXT_PUBLIC_DOMAIN || "localhost";
+        const rpID = rawDomain.replace(/^https?:\/\//, "");
         const options = await generateAuthenticationOptions({
-            rpID: process.env.NEXT_PUBLIC_DOMAIN || "localhost",
+            rpID,
             userVerification: "preferred",
         });
 
@@ -19,7 +21,12 @@ export async function GET() {
         });
 
         return NextResponse.json(options);
-    } catch {
-        return NextResponse.json({ error: "Failed to generate login options" }, { status: 500 });
+
+    } catch (error: unknown) {
+        console.error("Passkey Generate Login Options Error:", error);
+        return NextResponse.json(
+            { message: "Failed to generate passkey login options" },
+            { status: 500 }
+        );
     }
 }

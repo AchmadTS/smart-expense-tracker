@@ -1,26 +1,33 @@
 import { NextResponse } from "next/server";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { db } from "@/lib/db";
-import { users, passkeys } from "@/schemas/schema";
+import { passkeys } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
 import { getUserFromSession } from "@/services/auth";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
-    const user = await getUserFromSession();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const body = await req.json();
-    const dbUser = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
-    const expectedChallenge = dbUser[0].currentChallenge;
-
-    if (!expectedChallenge) return NextResponse.json({ error: "No challenge found" }, { status: 400 });
-
     try {
+        const user = await getUserFromSession();
+        if (!user) {
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const cookieStore = await cookies();
+        const expectedChallenge = cookieStore.get("challenge")?.value;
+
+        if (!expectedChallenge) {
+            return NextResponse.json({ message: "No challenge found. Please restart registration." }, { status: 400 });
+        }
+
+        const rawDomain = process.env.NEXT_PUBLIC_DOMAIN || "localhost";
+        const expectedRPID = rawDomain.replace(/^https?:\/\//, "");
         const verification = await verifyRegistrationResponse({
             response: body,
             expectedChallenge,
             expectedOrigin: process.env.NEXT_PUBLIC_ORIGIN || "http://localhost:3000",
-            expectedRPID: process.env.NEXT_PUBLIC_DOMAIN || "localhost",
+            expectedRPID,
         });
 
         if (verification.verified && verification.registrationInfo) {
@@ -51,14 +58,20 @@ export async function POST(req: Request) {
                 });
             }
 
-            await db.update(users).set({ currentChallenge: null }).where(eq(users.id, user.id));
-
-            return NextResponse.json({ success: true });
+            cookieStore.delete("challenge");
+            return NextResponse.json({
+                success: true,
+                message: "Passkey registered successfully"
+            });
         }
 
-        return NextResponse.json({ error: "Verification failed" }, { status: 400 });
-    } catch (error) {
-        console.error("Passkey registration verification error:", error);
-        return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+        return NextResponse.json({ message: "Verification failed" }, { status: 400 });
+    } catch (error: unknown) {
+        console.error("Passkey Registration Verify Error:", error);
+
+        return NextResponse.json(
+            { message: "Registration failed due to server error" },
+            { status: 500 }
+        );
     }
 }

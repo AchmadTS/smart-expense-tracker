@@ -3,10 +3,9 @@ import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { SignJWT } from "jose";
 import { z } from "zod";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-auth-key";
 const registerBodySchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email format"),
@@ -29,13 +28,13 @@ export async function POST(request: Request) {
         }
 
         const { name, email, password, currency } = validationResult.data;
-        const existingUser = await db
+        const [existingUser] = await db
             .select()
             .from(users)
             .where(eq(users.email, email))
             .limit(1);
 
-        if (existingUser.length > 0) {
+        if (existingUser) {
             return NextResponse.json(
                 { message: "Email is already registered" },
                 { status: 400 }
@@ -53,13 +52,20 @@ export async function POST(request: Request) {
             })
             .returning();
 
-        const token = jwt.sign(
-            { userId: newUser.id, email: newUser.email },
-            JWT_SECRET,
-            { expiresIn: "7d" }
-        );
+        if (!process.env.JWT_SECRET) {
+            console.error("CRITICAL: JWT_SECRET is missing.");
+            return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        }
+
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const token = await new SignJWT({ userId: newUser.id, email: newUser.email })
+            .setProtectedHeader({ alg: "HS256" })
+            .setIssuedAt()
+            .setExpirationTime("7d")
+            .sign(secret);
 
         const response = NextResponse.json({
+            success: true,
             token,
             user: {
                 id: newUser.id,
@@ -74,13 +80,17 @@ export async function POST(request: Request) {
             value: token,
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 7,
         });
 
         return response;
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Internal server error";
-        return NextResponse.json({ message: errorMessage }, { status: 500 });
+    } catch (error: unknown) {
+        console.error("Register Error:", error);
+        return NextResponse.json(
+            { message: "Internal server error" },
+            { status: 500 }
+        );
     }
 }

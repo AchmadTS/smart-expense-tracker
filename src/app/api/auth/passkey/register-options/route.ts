@@ -1,26 +1,45 @@
 import { NextResponse } from "next/server";
 import { generateRegistrationOptions } from "@simplewebauthn/server";
-import { db } from "@/lib/db";
-import { users } from "@/schemas/schema";
-import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { getUserFromSession } from "@/services/auth";
 
 export async function GET() {
-    const user = await getUserFromSession();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+        const user = await getUserFromSession();
+        if (!user) {
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        }
 
-    const options = await generateRegistrationOptions({
-        rpName: "ExpenseAI",
-        rpID: process.env.NEXT_PUBLIC_DOMAIN || "localhost",
-        userID: new TextEncoder().encode(user.id.toString()),
-        userName: user.email,
-        attestationType: "none",
-        authenticatorSelection: {
-            residentKey: "preferred",
-            userVerification: "preferred",
-        },
-    });
+        const rawDomain = process.env.NEXT_PUBLIC_DOMAIN || "localhost";
+        const rpID = rawDomain.replace(/^https?:\/\//, "");
+        const options = await generateRegistrationOptions({
+            rpName: "ExpenseAI",
+            rpID,
+            userID: new TextEncoder().encode(user.id.toString()),
+            userName: user.email,
+            attestationType: "none",
+            authenticatorSelection: {
+                residentKey: "preferred",
+                userVerification: "preferred",
+            },
+        });
 
-    await db.update(users).set({ currentChallenge: options.challenge }).where(eq(users.id, user.id));
-    return NextResponse.json(options);
+        const cookieStore = await cookies();
+        cookieStore.set("challenge", options.challenge, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 60 * 5,
+            path: "/",
+        });
+
+        return NextResponse.json(options);
+
+    } catch (error: unknown) {
+        console.error("Passkey Generate Registration Options Error:", error);
+        return NextResponse.json(
+            { message: "Failed to generate registration options" },
+            { status: 500 }
+        );
+    }
 }

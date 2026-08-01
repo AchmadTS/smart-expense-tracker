@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import toast from "react-hot-toast";
 import { requestPasswordReset, verifyPasswordResetOtp } from "@/services/auth";
 import Spinner from "@/components/Spinner";
+import { showToast } from "@/lib/toast";
+import ToastContainer from "@/components/ui/ToastContainer";
 
 interface OtpStepProps {
   email: string;
@@ -80,15 +81,15 @@ export default function OtpStep({
     try {
       const res = await verifyPasswordResetOtp(email, otpCode);
       if (res.error) {
-        toast.error(res.error);
+        showToast(res.error, "error");
         setOtp(Array(6).fill(""));
         inputRefs.current[0]?.focus();
         return;
       }
-      toast.success("Verification Successful!");
+      showToast("Verification Successful!", "success");
       onSuccess(res.token as string);
     } catch {
-      toast.error("An unexpected error occurred during verification.");
+      showToast("An unexpected error occurred during verification.", "error");
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -102,7 +103,7 @@ export default function OtpStep({
     try {
       const result = await requestPasswordReset(email);
       if (result.error) {
-        toast.error(result.error);
+        showToast(result.error, "error");
         setCountdown(0);
         return;
       }
@@ -110,87 +111,90 @@ export default function OtpStep({
         "otp_resend_expiry",
         (new Date().getTime() + 60000).toString(),
       );
-      toast.success("New OTP code has been resent!");
+      showToast("New OTP code has been resent!", "success");
     } catch {
-      toast.error("Failed to resend OTP. Please try again.");
+      showToast("Failed to resend OTP. Please try again.", "error");
       setCountdown(0);
       localStorage.removeItem("otp_resend_expiry");
     }
   };
 
   return (
-    <motion.div
-      key="otp-step"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col items-center text-center"
-    >
-      <div className="w-full flex justify-start mb-8">
-        <button
-          onClick={onChangeEmail}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition"
-        >
-          <ArrowLeft size={16} />
-          Change Email
-        </button>
-      </div>
-
-      <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
-        Email Verification
-      </h2>
-      <p className="text-slate-500 text-sm mb-10 max-w-sm">
-        We&apos;ve sent a 6-digit code to{" "}
-        <span className="font-semibold text-slate-700">{email}</span>.
-      </p>
-
-      <div className="flex items-center justify-center gap-2.5 sm:gap-4 mb-8">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            ref={(el) => {
-              inputRefs.current[index] = el;
-            }}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleChangeOtp(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDownOtp(index, e)}
-            className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-2xl border-2 transition-all focus:outline-none ${
-              digit
-                ? "bg-white border-teal-500 text-teal-600 shadow-sm shadow-teal-500/20"
-                : "bg-slate-100/80 border-transparent text-slate-900 focus:bg-white focus:border-teal-500"
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="h-6">
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-teal-600 font-medium">
-            <Spinner size="sm" /> Verify code...
-          </div>
-        )}
-      </div>
-
-      <p className="text-sm text-slate-500 mt-8">
-        Didn&apos;t receive the code?{" "}
-        {canResend ? (
+    <>
+      <motion.div
+        key="otp-step"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col items-center text-center"
+      >
+        <div className="w-full flex justify-start mb-8">
           <button
-            type="button"
-            onClick={handleResendOtp}
-            className="text-teal-600 font-semibold hover:text-teal-700 transition cursor-pointer"
+            onClick={onChangeEmail}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition"
           >
-            Resend
+            <ArrowLeft size={16} />
+            Change Email
           </button>
-        ) : (
-          <span className="text-slate-400 font-medium">
-            Resend in {countdown}s
-          </span>
-        )}
-      </p>
-    </motion.div>
+        </div>
+
+        <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+          Email Verification
+        </h2>
+        <p className="text-slate-500 text-sm mb-10 max-w-sm">
+          We&apos;ve sent a 6-digit code to{" "}
+          <span className="font-semibold text-slate-700">{email}</span>.
+        </p>
+
+        <div className="flex items-center justify-center gap-2.5 sm:gap-4 mb-8">
+          {otp.map((digit, index) => (
+            <input
+              key={index}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleChangeOtp(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDownOtp(index, e)}
+              className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-2xl border-2 transition-all focus:outline-none ${
+                digit
+                  ? "bg-white border-teal-500 text-teal-600 shadow-sm shadow-teal-500/20"
+                  : "bg-slate-100/80 border-transparent text-slate-900 focus:bg-white focus:border-teal-500"
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className="h-6">
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-teal-600 font-medium">
+              <Spinner size="sm" /> Verify code...
+            </div>
+          )}
+        </div>
+
+        <p className="text-sm text-slate-500 mt-8">
+          Didn&apos;t receive the code?{" "}
+          {canResend ? (
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              className="text-teal-600 font-semibold hover:text-teal-700 transition cursor-pointer"
+            >
+              Resend
+            </button>
+          ) : (
+            <span className="text-slate-400 font-medium">
+              Resend in {countdown}s
+            </span>
+          )}
+        </p>
+      </motion.div>
+      <ToastContainer />
+    </>
   );
 }

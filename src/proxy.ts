@@ -32,7 +32,12 @@ export async function middleware(request: NextRequest) {
 
     if (token) {
         try {
-            const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                throw new Error("JWT_SECRET is missing");
+            }
+
+            const secret = new TextEncoder().encode(jwtSecret);
             await jwtVerify(token, secret);
             isTokenValid = true;
         } catch {

@@ -155,6 +155,64 @@ test.describe('Authentication Flow', () => {
         await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
     });
 
+    test('harus gagal dan menampilkan error jika Passkey belum terdaftar', async ({ page }) => {
+        await page.addInitScript(() => {
+            window.PublicKeyCredential = class { } as unknown as typeof PublicKeyCredential;
+            window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = async () => true;
+            window.PublicKeyCredential.isConditionalMediationAvailable = async () => true;
+
+            if (!navigator.credentials) {
+                Object.defineProperty(navigator, 'credentials', {
+                    value: {},
+                    configurable: true,
+                    writable: true,
+                    enumerable: true
+                });
+            }
+
+            navigator.credentials.get = async () => {
+                const dummyBuffer = new TextEncoder().encode('valid-dummy-data').buffer;
+                return {
+                    id: 'mock-passkey-id',
+                    rawId: dummyBuffer,
+                    response: {
+                        authenticatorData: dummyBuffer,
+                        clientDataJSON: dummyBuffer,
+                        signature: dummyBuffer,
+                        userHandle: dummyBuffer,
+                    },
+                    authenticatorAttachment: 'platform',
+                    type: 'public-key',
+                    getClientExtensionResults: () => ({})
+                } as unknown as PublicKeyCredential;
+            };
+        });
+
+        await page.route('**/api/auth/**', async (route) => {
+            const request = route.request();
+            const url = request.url();
+
+            const isPasskeyRoute = url.includes('passkey') || url.includes('webauthn');
+            const isVerifyEndpoint = url.includes('verify') || url.includes('authenticate');
+
+            if (isPasskeyRoute && isVerifyEndpoint) {
+                await route.fulfill({
+                    status: 400,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ message: 'Passkey not registered or user not found' })
+                });
+            } else {
+                await route.continue();
+            }
+        });
+
+        await page.goto('http://localhost:3000/login');
+        await page.getByPlaceholder('you@example.com').pressSequentially('thirfanurmufida@gmail.com', { delay: 50 });
+        await page.getByRole('button', { name: /sign in with passkey/i }).click();
+        await expect(page.getByText(/passkey not registered|not found|error|invalid|failed/i).first()).toBeVisible({ timeout: 10000 });
+        await expect(page).toHaveURL(/.*\/login/);
+    });
+
     test('harus berhasil login menggunakan Passkey (Advanced API Mocking)', async ({ page }) => {
         const secret = process.env.JWT_SECRET;
 

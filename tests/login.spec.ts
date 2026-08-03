@@ -154,4 +154,79 @@ test.describe('Authentication Flow', () => {
 
         await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
     });
+
+    test('harus berhasil login menggunakan Passkey (Advanced API Mocking)', async ({ page }) => {
+        const secret = process.env.JWT_SECRET;
+
+        if (!secret) {
+            throw new Error("JWT_SECRET tidak ditemukan di environment file (.env)!");
+        }
+
+        const secretKey = new TextEncoder().encode(secret);
+        const validJwtToken = await new SignJWT({
+            userId: '01KYZZ6VKK5PWYXHWC084N60C7',
+            email: 'achmadtirtosudirosudiro@gmail.com'
+        })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('1h')
+            .sign(secretKey);
+
+        await page.addInitScript(() => {
+            window.PublicKeyCredential = class { } as unknown as typeof PublicKeyCredential;
+            window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = async () => true;
+            window.PublicKeyCredential.isConditionalMediationAvailable = async () => true;
+            if (!navigator.credentials) {
+                Object.defineProperty(navigator, 'credentials', {
+                    value: {},
+                    configurable: true,
+                    writable: true,
+                    enumerable: true
+                });
+            }
+
+            navigator.credentials.get = async () => {
+                const dummyBuffer = new TextEncoder().encode('valid-dummy-data').buffer;
+
+                return {
+                    id: 'mock-passkey-id',
+                    rawId: dummyBuffer,
+                    response: {
+                        authenticatorData: dummyBuffer,
+                        clientDataJSON: dummyBuffer,
+                        signature: dummyBuffer,
+                        userHandle: dummyBuffer,
+                    },
+                    authenticatorAttachment: 'platform',
+                    type: 'public-key',
+                    getClientExtensionResults: () => ({})
+                } as unknown as PublicKeyCredential;
+            };
+        });
+
+        await page.route('**/api/auth/**', async (route) => {
+            const request = route.request();
+            const url = request.url();
+            const isPasskeyRoute = url.includes('passkey');
+            const isVerifyEndpoint = url.includes('verify');
+
+            if (isPasskeyRoute && isVerifyEndpoint) {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    headers: {
+                        'Set-Cookie': `token=${validJwtToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600`
+                    },
+                    body: JSON.stringify({ success: true, redirect: '/dashboard' })
+                });
+            } else {
+                await route.continue();
+            }
+        });
+
+        await page.goto('http://localhost:3000/login');
+        await page.getByPlaceholder('you@example.com').pressSequentially('achmadtirtosudirosudiro@gmail.com', { delay: 50 });
+        await page.getByRole('button', { name: /sign in with passkey/i }).click();
+        await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
+    });
 });

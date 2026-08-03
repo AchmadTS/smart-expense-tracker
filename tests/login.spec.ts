@@ -87,4 +87,71 @@ test.describe('Authentication Flow', () => {
 
         await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
     });
+
+    test('harus gagal dan menampilkan error jika Backup Code salah', async ({ page }) => {
+        await page.route(/\/api\/auth\/2fa\/verify-backup/, async (route) => {
+            await route.fulfill({
+                status: 400,
+                contentType: 'application/json',
+                body: JSON.stringify({ message: 'Invalid backup code. It may have been used or typed incorrectly.' })
+            });
+        });
+
+        await page.goto('http://localhost:3000/login');
+        await page.getByPlaceholder('you@example.com').pressSequentially('thirfanurmufida@gmail.com', { delay: 50 });
+        await page.getByPlaceholder('••••••••').pressSequentially('$aTs130425.', { delay: 50 });
+        await page.getByRole('button', { name: 'Login' }).click();
+        await expect(page.getByText(/two-factor auth/i)).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: /use backup code/i }).click();
+        await expect(page.getByText(/emergency login/i)).toBeVisible({ timeout: 10000 });
+        const wrongCode = ['X', 'X', 'X', 'X', 'Y', 'Y', 'Y', 'Y'];
+        for (let i = 0; i < 8; i++) {
+            await page.locator('input[maxLength="1"]').nth(i).fill(wrongCode[i]);
+        }
+
+        await expect(page.getByText(/invalid backup code/i)).toBeVisible({ timeout: 10000 });
+        await expect(page).toHaveURL(/.*\/login/);
+    });
+
+    test('harus sukses masuk dashboard jika Backup Code benar (Real Middleware & Real Dashboard)', async ({ page }) => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error("JWT_SECRET tidak ditemukan di environment file (.env)!");
+        }
+        const secretKey = new TextEncoder().encode(secret);
+        const validJwtToken = await new SignJWT({
+            userId: '01KZ11NBANF7PFN9GCD83KQNGS',
+            email: 'thirfanurmufida@gmail.com'
+        })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('1h')
+            .sign(secretKey);
+
+        await page.route(/\/api\/auth\/2fa\/verify-backup/, async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                headers: {
+                    'Set-Cookie': `token=${validJwtToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600`
+                },
+                body: JSON.stringify({ success: true, redirect: '/dashboard' })
+            });
+        });
+
+        await page.goto('http://localhost:3000/login');
+        await page.getByPlaceholder('you@example.com').pressSequentially('thirfanurmufida@gmail.com', { delay: 50 });
+        await page.getByPlaceholder('••••••••').pressSequentially('$aTs130425.', { delay: 50 });
+        await page.getByRole('button', { name: 'Login' }).click();
+        await expect(page.getByText(/two-factor auth/i)).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: /use backup code/i }).click();
+        await expect(page.getByText(/emergency login/i)).toBeVisible({ timeout: 10000 });
+
+        const correctCode = ['1', '2', '3', '4', 'A', 'B', 'C', 'D'];
+        for (let i = 0; i < 8; i++) {
+            await page.locator('input[maxLength="1"]').nth(i).fill(correctCode[i]);
+        }
+
+        await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
+    });
 });

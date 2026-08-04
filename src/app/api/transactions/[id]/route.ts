@@ -22,12 +22,14 @@ async function getUserId() {
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+        const resolvedParams = await params;
+        const transactionId = resolvedParams.id;
         const body = await request.json();
         const validatedData = transactionSchema.safeParse(body);
 
@@ -46,8 +48,7 @@ export async function PUT(
                 notes,
                 transactionDate,
             })
-            .where(and(eq(transactions.id, params.id), eq(transactions.userId, userId)));
-
+            .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)));
         return NextResponse.json({ message: "Transaction updated" }, { status: 200 });
     } catch (error) {
         console.error("PUT Transaction Error:", error);
@@ -57,15 +58,18 @@ export async function PUT(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const userId = await getUserId();
         if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+        const resolvedParams = await params;
+        const transactionId = resolvedParams.id;
+
         await db
             .delete(transactions)
-            .where(and(eq(transactions.id, params.id), eq(transactions.userId, userId)));
+            .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)));
 
         return NextResponse.json({ message: "Transaction deleted" }, { status: 200 });
     } catch (error) {

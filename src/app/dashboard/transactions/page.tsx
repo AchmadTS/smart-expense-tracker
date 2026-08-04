@@ -87,13 +87,28 @@ export default function TransactionsPage() {
     try {
       setLoading(true);
       const [tRes, cRes] = await Promise.all([
-        fetch("/api/transactions?limit=2000").then((res) => res.json()),
-        fetch("/api/categories").then((res) => res.json()),
+        fetch("/api/transactions?limit=2000").then(async (res) => {
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(
+              `API Transactions Error (${res.status}): ${errText}`,
+            );
+          }
+          return res.json();
+        }),
+        fetch("/api/categories").then(async (res) => {
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`API Categories Error (${res.status}): ${errText}`);
+          }
+          return res.json();
+        }),
       ]);
       setAllTransactions(tRes.data || tRes || []);
       setCategories(cRes.data || cRes || []);
-    } catch {
-      showToast("Failed to load transactions", "error");
+    } catch (error) {
+      console.error("Fetch Data Error Detail:", error);
+      showToast("Failed to load transactions. Check console.", "error");
     } finally {
       setLoading(false);
     }

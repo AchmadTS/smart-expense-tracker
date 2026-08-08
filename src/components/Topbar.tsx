@@ -16,10 +16,24 @@ import {
   Smartphone,
   Copy,
   CheckCircle2,
+  Check,
+  Inbox,
+  Sparkles,
+  AlertTriangle,
+  Receipt,
 } from "lucide-react";
 import { BarProps } from "@/types/user";
 import { startRegistration } from "@simplewebauthn/browser";
 import { showToast } from "@/lib/toast";
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  type: "warning" | "insight" | "transaction";
+}
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -43,6 +57,35 @@ export default function Topbar({ user }: BarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isSecurityExpanded, setIsSecurityExpanded] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: "1",
+      title: "Budget Alert",
+      message: "You've reached 85% of your Food & Dining budget.",
+      time: "10m ago",
+      read: false,
+      type: "warning",
+    },
+    {
+      id: "2",
+      title: "AI Insight Ready",
+      message: "Weekly spending summary is ready to view.",
+      time: "1h ago",
+      read: false,
+      type: "insight",
+    },
+    {
+      id: "3",
+      title: "New Transaction",
+      message: "Expense of $45.00 recorded in Shopping.",
+      time: "1d ago",
+      read: true,
+      type: "transaction",
+    },
+  ]);
+
   const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false);
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [showRemovePasskeyModal, setShowRemovePasskeyModal] = useState(false);
@@ -63,6 +106,7 @@ export default function Topbar({ user }: BarProps) {
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
   const [isDisabling2FA, setIsDisabling2FA] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     async function checkPasskeyStatus() {
@@ -80,6 +124,17 @@ export default function Topbar({ user }: BarProps) {
     }
     checkPasskeyStatus();
   }, []);
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    showToast("All notifications marked as read", "success");
+  };
+
+  const markAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  };
 
   const handleTogglePasskey = async () => {
     if (isPasskeyEnabled) {
@@ -251,9 +306,16 @@ export default function Topbar({ user }: BarProps) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMobileMenuOpen(false);
         setIsSecurityExpanded(false);
+      }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(target)
+      ) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -267,6 +329,7 @@ export default function Topbar({ user }: BarProps) {
         if (showRemovePasskeyModal) setShowRemovePasskeyModal(false);
         if (show2FASetupModal) setShow2FASetupModal(false);
         if (showDisable2FAModal) setShowDisable2FAModal(false);
+        if (isNotificationOpen) setIsNotificationOpen(false);
         if (isMobileMenuOpen) {
           setIsMobileMenuOpen(false);
           setIsSecurityExpanded(false);
@@ -280,12 +343,36 @@ export default function Topbar({ user }: BarProps) {
     showRemovePasskeyModal,
     show2FASetupModal,
     showDisable2FAModal,
+    isNotificationOpen,
     isMobileMenuOpen,
   ]);
 
   const currentPageName = pathname
     ? pathname.split("/").filter(Boolean).pop() || "dashboard"
     : "dashboard";
+
+  const getNotificationIcon = (type: NotificationItem["type"]) => {
+    switch (type) {
+      case "warning":
+        return (
+          <div className="h-8 w-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <AlertTriangle size={15} />
+          </div>
+        );
+      case "insight":
+        return (
+          <div className="h-8 w-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+            <Sparkles size={15} />
+          </div>
+        );
+      case "transaction":
+        return (
+          <div className="h-8 w-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <Receipt size={15} />
+          </div>
+        );
+    }
+  };
 
   return (
     <>
@@ -305,13 +392,95 @@ export default function Topbar({ user }: BarProps) {
           >
             <Search size={17} />
           </button>
-          <button
-            title="Notifications"
-            className="relative h-9 w-9 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition cursor-pointer"
-          >
-            <Bell size={17} />
-            <span className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full ring-2 ring-white" />
-          </button>
+
+          <div className="relative" ref={notificationRef}>
+            <button
+              title="Notifications"
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className="relative h-9 w-9 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition cursor-pointer"
+            >
+              <Bell size={17} />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              )}
+            </button>
+
+            {isNotificationOpen && (
+              <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-100 rounded-3xl shadow-xl py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 pb-3 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-sm text-slate-900">
+                      Notifications
+                    </h4>
+                    {unreadCount > 0 && (
+                      <span className="bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-teal-600 hover:text-teal-700 font-medium transition cursor-pointer flex items-center gap-1"
+                    >
+                      <Check size={13} />
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400">
+                      <Inbox size={28} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-xs font-medium">
+                        No notifications yet
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => markAsRead(item.id)}
+                        className={`p-3.5 flex items-start gap-3 transition cursor-pointer hover:bg-slate-50/80 ${
+                          !item.read ? "bg-teal-50/20" : ""
+                        }`}
+                      >
+                        {getNotificationIcon(item.type)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <span className="text-xs font-semibold text-slate-900 truncate">
+                              {item.title}
+                            </span>
+                            <span className="text-[10px] text-slate-400 shrink-0">
+                              {item.time}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                            {item.message}
+                          </p>
+                        </div>
+                        {!item.read && (
+                          <span className="h-1.5 w-1.5 bg-teal-500 rounded-full shrink-0 mt-2" />
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="px-3 pt-2 border-t border-slate-100">
+                  <Link
+                    href="/dashboard/notifications"
+                    onClick={() => setIsNotificationOpen(false)}
+                    className="w-full py-2 bg-slate-50 hover:bg-slate-100 rounded-2xl text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center justify-center gap-1 transition"
+                  >
+                    View all notifications
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="relative lg:hidden ml-1" ref={menuRef}>
             <button
@@ -364,7 +533,11 @@ export default function Topbar({ user }: BarProps) {
                       </div>
                       <ChevronRight
                         size={15}
-                        className={`transition-colors duration-200 ${isSecurityExpanded ? "rotate-90 text-slate-900" : "text-slate-400"}`}
+                        className={`transition-colors duration-200 ${
+                          isSecurityExpanded
+                            ? "rotate-90 text-slate-900"
+                            : "text-slate-400"
+                        }`}
                       />
                     </button>
 
@@ -388,10 +561,16 @@ export default function Topbar({ user }: BarProps) {
                             </span>
                           </div>
                           <div
-                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"}`}
+                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${
+                              isPasskeyEnabled ? "bg-teal-500" : "bg-slate-200"
+                            }`}
                           >
                             <div
-                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${isPasskeyEnabled ? "translate-x-3" : "translate-x-0"}`}
+                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${
+                                isPasskeyEnabled
+                                  ? "translate-x-3"
+                                  : "translate-x-0"
+                              }`}
                             />
                           </div>
                         </button>
@@ -414,10 +593,14 @@ export default function Topbar({ user }: BarProps) {
                             </span>
                           </div>
                           <div
-                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${is2FAEnabled ? "bg-teal-500" : "bg-slate-200"}`}
+                            className={`w-7 h-4 rounded-full relative transition-colors duration-300 shrink-0 ${
+                              is2FAEnabled ? "bg-teal-500" : "bg-slate-200"
+                            }`}
                           >
                             <div
-                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${is2FAEnabled ? "translate-x-3" : "translate-x-0"}`}
+                              className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-300 ${
+                                is2FAEnabled ? "translate-x-3" : "translate-x-0"
+                              }`}
                             />
                           </div>
                         </button>
@@ -436,10 +619,14 @@ export default function Topbar({ user }: BarProps) {
                       Dark Mode
                     </div>
                     <div
-                      className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 shrink-0 ${isDarkMode ? "bg-teal-500" : "bg-slate-200"}`}
+                      className={`w-8 h-4.5 rounded-full relative transition-colors duration-300 shrink-0 ${
+                        isDarkMode ? "bg-teal-500" : "bg-slate-200"
+                      }`}
                     >
                       <div
-                        className={`absolute top-0.5 left-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ${isDarkMode ? "translate-x-3.5" : "translate-x-0"}`}
+                        className={`absolute top-0.5 left-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ${
+                          isDarkMode ? "translate-x-3.5" : "translate-x-0"
+                        }`}
                       ></div>
                     </div>
                   </button>
@@ -490,7 +677,7 @@ export default function Topbar({ user }: BarProps) {
                   )}
                 </div>
                 <p className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">1.</span> Scan
+                  <span className="font-semibold text-slate-900">1.</span> Scan
                   this QR code with an app like{" "}
                   <span className="font-semibold">Google Authenticator</span> or{" "}
                   <span className="font-semibold">Authy</span>.
@@ -554,7 +741,7 @@ export default function Topbar({ user }: BarProps) {
                 onClick={() => setShow2FASetupModal(false)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
               >
-                Cancelled
+                Cancel
               </button>
               <button
                 type="button"
@@ -562,9 +749,7 @@ export default function Topbar({ user }: BarProps) {
                 onClick={handleVerify2FA}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-teal-600 text-sm font-medium text-white hover:bg-teal-700 transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
               >
-                {isVerifying2FA
-                  ? "Verifying..."
-                  : "Verification and Activation"}
+                {isVerifying2FA ? "Verifying..." : "Verify and Activate"}
               </button>
             </div>
           </div>
@@ -593,7 +778,7 @@ export default function Topbar({ user }: BarProps) {
                 onClick={() => setShowDisable2FAModal(false)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
               >
-                Cancelled
+                Cancel
               </button>
               <button
                 type="button"
@@ -601,7 +786,7 @@ export default function Topbar({ user }: BarProps) {
                 onClick={confirmDisable2FA}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500 text-sm font-medium text-white hover:bg-amber-600 transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
               >
-                {isDisabling2FA ? "Turn off..." : "Yes, Turn Off"}
+                {isDisabling2FA ? "Turning off..." : "Yes, Turn Off"}
               </button>
             </div>
           </div>
@@ -679,7 +864,7 @@ export default function Topbar({ user }: BarProps) {
                 onClick={handleLogout}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
               >
-                {isLoggingOut ? "Logout..." : "Yes, Logout"}
+                {isLoggingOut ? "Logging out..." : "Yes, Logout"}
               </button>
             </div>
           </div>

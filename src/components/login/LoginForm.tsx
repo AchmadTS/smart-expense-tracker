@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Clock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,11 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import { motion } from "framer-motion";
 import Spinner from "@/components/Spinner";
 import { showToast } from "@/lib/toast";
+import {
+  getSavedLockoutRemaining,
+  setLockoutDuration,
+  clearLockout,
+} from "@/utils/auth-lockout";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -31,6 +36,9 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    return getSavedLockoutRemaining();
+  });
 
   const {
     register,
@@ -50,7 +58,37 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
     }
   }, [reset]);
 
+  useEffect(() => {
+    if (remainingSeconds <= 0) return;
+
+    const timer = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearLockout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [remainingSeconds]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m > 0 ? `${m}m ` : ""}${s}s`;
+  };
+
   const onSubmit = async (data: LoginFormData) => {
+    if (remainingSeconds > 0) {
+      showToast(
+        `Please wait ${formatTime(remainingSeconds)} before trying again.`,
+        "error",
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -60,7 +98,16 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
       });
       const result = await res.json();
 
-      if (!res.ok) throw new Error(result.message || "Login failed");
+      if (!res.ok) {
+        if (res.status === 429 && result.lockoutDuration) {
+          setLockoutDuration(result.lockoutDuration);
+          setRemainingSeconds(result.lockoutDuration);
+        }
+        throw new Error(result.message || "Login failed");
+      }
+
+      clearLockout();
+      setRemainingSeconds(0);
 
       if (result.requires2FA) {
         onRequire2FA({
@@ -88,6 +135,14 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
   };
 
   const handlePasskeyLogin = async () => {
+    if (remainingSeconds > 0) {
+      showToast(
+        `Please wait ${formatTime(remainingSeconds)} before using Passkey.`,
+        "error",
+      );
+      return;
+    }
+
     setPasskeyLoading(true);
     try {
       const resp = await fetch("/api/auth/passkey/login-options", {
@@ -144,7 +199,8 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
           <input
             type="email"
             {...register("email")}
-            className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition"
+            disabled={remainingSeconds > 0}
+            className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none transition disabled:opacity-60 disabled:cursor-not-allowed"
             placeholder="you@example.com"
           />
           {errors.email && (
@@ -162,13 +218,15 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
             <input
               type={showPassword ? "text" : "password"}
               {...register("password")}
-              className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition"
+              disabled={remainingSeconds > 0}
+              className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white border-2 border-transparent focus:border-teal-500 rounded-2xl px-5 py-4 pr-12 text-slate-900 text-sm focus:outline-none transition disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              disabled={remainingSeconds > 0}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer disabled:cursor-not-allowed"
               tabIndex={-1}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -185,8 +243,9 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
+              disabled={remainingSeconds > 0}
               {...register("rememberMe")}
-              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 accent-teal-600 cursor-pointer"
+              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 accent-teal-600 cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-slate-600 text-xs font-medium">
               Remember me
@@ -204,10 +263,19 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
         </div>
         <button
           type="submit"
-          disabled={loading}
-          className="w-full inline-flex items-center justify-center gap-2 bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg shadow-teal-600/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          disabled={loading || remainingSeconds > 0}
+          className={`cursor-pointer w-full inline-flex items-center justify-center gap-2 font-semibold py-4 rounded-2xl transition shadow-lg disabled:cursor-not-allowed ${
+            remainingSeconds > 0
+              ? "bg-slate-200 text-slate-500 shadow-none"
+              : "bg-linear-to-br from-teal-400 to-teal-600 active:from-teal-500 active:to-teal-700 text-white shadow-teal-600/20 disabled:opacity-60"
+          }`}
         >
-          {loading ? (
+          {remainingSeconds > 0 ? (
+            <>
+              <Clock size={18} />
+              Try again in {formatTime(remainingSeconds)}
+            </>
+          ) : loading ? (
             <>
               <Spinner size="sm" /> Signing in...
             </>
@@ -229,7 +297,7 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
       <button
         type="button"
         onClick={handlePasskeyLogin}
-        disabled={passkeyLoading}
+        disabled={passkeyLoading || remainingSeconds > 0}
         className="w-full inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-semibold py-4 rounded-2xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {passkeyLoading ? (
@@ -238,8 +306,13 @@ export default function LoginForm({ onRequire2FA }: LoginFormProps) {
           </>
         ) : (
           <>
-            <KeyRound size={18} className="text-teal-600" /> Sign in with
-            Passkey
+            <KeyRound
+              size={18}
+              className={
+                remainingSeconds > 0 ? "text-slate-400" : "text-teal-600"
+              }
+            />{" "}
+            Sign in with Passkey
           </>
         )}
       </button>

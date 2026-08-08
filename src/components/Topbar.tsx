@@ -216,6 +216,7 @@ export default function Topbar({ user }: BarProps) {
       setIs2FALoading(true);
       const resp = await fetch("/api/auth/2fa/setup", {
         method: "POST",
+        credentials: "include",
       });
       const data = await resp.json();
 
@@ -243,6 +244,7 @@ export default function Topbar({ user }: BarProps) {
       const resp = await fetch("/api/auth/2fa/verify-setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ token: otpToken }),
       });
       const data = await resp.json();
@@ -268,6 +270,7 @@ export default function Topbar({ user }: BarProps) {
       setIsDisabling2FA(true);
       const resp = await fetch("/api/auth/2fa/disable", {
         method: "POST",
+        credentials: "include",
       });
 
       if (!resp.ok) throw new Error("Failed to turn off 2FA");

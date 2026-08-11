@@ -86,6 +86,11 @@ export default function TransactionList({
     [allTransactions],
   );
 
+  const filteredCategories = useMemo(() => {
+    if (!filters.type) return categories;
+    return categories.filter((c) => c.type === filters.type);
+  }, [categories, filters.type]);
+
   const tabs = [
     {
       value: "",
@@ -132,7 +137,11 @@ export default function TransactionList({
             <button
               key={tab.value || "all"}
               onClick={() =>
-                handleFilterUpdate({ ...filters, type: tab.value })
+                handleFilterUpdate({
+                  ...filters,
+                  type: tab.value,
+                  categoryId: "",
+                })
               }
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition flex items-center gap-2 cursor-pointer ${
                 filters.type === tab.value
@@ -155,7 +164,7 @@ export default function TransactionList({
           onChange={(e) =>
             handleFilterUpdate({ ...filters, categoryId: e.target.value })
           }
-          className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer"
+          className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer w-48 sm:w-52 shrink-0 truncate"
         >
           <option
             value=""
@@ -163,7 +172,7 @@ export default function TransactionList({
           >
             All categories
           </option>
-          {categories.map((c) => (
+          {filteredCategories.map((c) => (
             <option
               key={c.id}
               value={c.id}

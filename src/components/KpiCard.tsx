@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, LucideIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, type LucideIcon } from "lucide-react";
 
 type AccentColor =
   | "violet"
@@ -41,7 +41,7 @@ export default function KpiCard({
   const gradient = gradients[accent] || gradients.slate;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm transition-colors">
       {Icon && (
         <div
           className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 bg-linear-to-br ${gradient}`}
@@ -50,14 +50,20 @@ export default function KpiCard({
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-slate-500 truncate">{label}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+          {label}
+        </p>
         <div className="flex items-baseline gap-2 mt-0.5">
-          <h3 className="text-2xl font-bold text-slate-900 tracking-tight truncate">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
             {value}
           </h3>
           {hasDelta && (
             <span
-              className={`text-xs font-semibold shrink-0 inline-flex items-center gap-0.5 ${positive ? "text-emerald-600" : "text-rose-600"}`}
+              className={`text-xs font-semibold shrink-0 inline-flex items-center gap-0.5 ${
+                positive
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400"
+              }`}
             >
               {positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
               {Math.abs(delta).toFixed(2)}%

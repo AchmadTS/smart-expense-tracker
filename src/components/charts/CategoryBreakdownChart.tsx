@@ -46,10 +46,9 @@ const renderCustomizedLabel = (props: CustomizedLabelProps) => {
     <text
       x={x}
       y={y}
-      fill="#475569"
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
-      className="text-[11px] font-semibold"
+      className="text-[11px] font-semibold fill-slate-500 dark:fill-slate-400"
     >
       {`${(percent * 100).toFixed(2)}%`}
     </text>
@@ -97,10 +96,10 @@ export default function CategoryBreakdownChart({
     >
       <div className="relative h-56 w-full flex items-center justify-center">
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 z-10">
-          <span className="text-xs font-medium text-slate-500 truncate max-w-30">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate max-w-30">
             {displayTitle}
           </span>
-          <span className="text-sm font-bold text-slate-900 mt-0.5 truncate max-w-37.5">
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5 truncate max-w-37.5">
             {formatCurrency(displayValue, currency)}
           </span>
         </div>
@@ -188,8 +187,8 @@ export default function CategoryBreakdownChart({
               }}
               className={`flex items-center justify-between text-sm p-2 rounded-xl transition-colors cursor-pointer ${
                 isSelected || isHovered
-                  ? "bg-slate-100 font-semibold"
-                  : "hover:bg-slate-50"
+                  ? "bg-slate-100 dark:bg-slate-800 font-semibold"
+                  : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -200,14 +199,14 @@ export default function CategoryBreakdownChart({
                 <span
                   className={`text-xs truncate ${
                     isSelected || isHovered
-                      ? "text-slate-900 font-semibold"
-                      : "text-slate-700"
+                      ? "text-slate-900 dark:text-slate-100 font-semibold"
+                      : "text-slate-700 dark:text-slate-300"
                   }`}
                 >
                   {c.name}
                 </span>
               </div>
-              <span className="text-xs font-medium text-slate-900 shrink-0 ml-2">
+              <span className="text-xs font-medium text-slate-900 dark:text-slate-100 shrink-0 ml-2">
                 {formatCurrency(c.value, currency)}
               </span>
             </div>

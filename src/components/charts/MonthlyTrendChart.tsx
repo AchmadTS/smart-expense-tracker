@@ -64,17 +64,17 @@ export default function MonthlyTrendChart({
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#e5e7eb"
+                className="stroke-slate-100 dark:stroke-slate-800"
                 vertical={false}
               />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#6b7280", fontSize: 12 }}
+                tick={{ fill: "#94a3b8", fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                tick={{ fill: "#6b7280", fontSize: 12 }}
+                tick={{ fill: "#94a3b8", fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 width={96}
@@ -83,17 +83,17 @@ export default function MonthlyTrendChart({
                 }
               />
               <Tooltip
-                cursor={{ fill: "#f1f5f9" }}
+                cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
                 contentStyle={{
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "#0f172a",
                   borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+                  border: "1px solid #334155",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
                   fontSize: "12px",
-                  color: "#0f172a",
+                  color: "#f8fafc",
                 }}
                 itemStyle={{
-                  color: "#334155",
+                  color: "#f8fafc",
                   fontWeight: 600,
                 }}
                 formatter={(value) => {
@@ -109,28 +109,30 @@ export default function MonthlyTrendChart({
                 name="Pemasukan"
                 fill="url(#incomeGradient)"
                 radius={[10, 10, 10, 10]}
-                background={{ fill: "#f8fafc" }}
+                background={{ fill: "transparent" }}
               />
               <Bar
                 dataKey="expense"
                 name="Pengeluaran"
                 fill="url(#expenseGradient)"
                 radius={[10, 10, 10, 10]}
-                background={{ fill: "#f8fafc" }}
+                background={{ fill: "transparent" }}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 pt-3 text-xs font-medium border-t border-slate-100 mt-2">
+      <div className="flex items-center justify-center gap-6 pt-3 text-xs font-medium border-t border-slate-100 dark:border-slate-800 mt-2">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-teal-600 shrink-0" />
-          <span className="text-slate-600">Pemasukan</span>
+          <span className="h-2.5 w-2.5 rounded-full bg-teal-500 shrink-0" />
+          <span className="text-slate-600 dark:text-slate-300">Pemasukan</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-600 shrink-0" />
-          <span className="text-slate-600">Pengeluaran</span>
+          <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shrink-0" />
+          <span className="text-slate-600 dark:text-slate-300">
+            Pengeluaran
+          </span>
         </div>
       </div>
     </div>

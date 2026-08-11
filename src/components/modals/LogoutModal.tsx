@@ -21,7 +21,7 @@ export default function LogoutModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 w-full max-w-sm shadow-xl mx-4 space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 w-full max-w-sm shadow-xl mx-4 space-y-4 rounded-3xl">
         <div className="h-12 w-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-1">
           <AlertCircle size={24} />
         </div>

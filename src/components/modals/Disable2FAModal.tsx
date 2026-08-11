@@ -19,7 +19,7 @@ export default function Disable2FAModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 w-full max-w-sm shadow-xl mx-4 space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 w-full max-w-sm shadow-xl mx-4 space-y-4 rounded-3xl">
         <div className="h-12 w-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-1">
           <Shield size={24} />
         </div>

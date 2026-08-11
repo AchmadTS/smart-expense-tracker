@@ -31,7 +31,7 @@ export default function TwoFactorSetupModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200 p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 w-full max-w-md shadow-xl flex flex-col max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden scrollbar-none [-ms-overflow-style:none]">
+      <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 w-full max-w-md shadow-xl flex flex-col max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden scrollbar-none [-ms-overflow-style:none]">
         <div className="p-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
             <Shield size={20} />

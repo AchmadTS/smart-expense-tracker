@@ -1,4 +1,4 @@
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/sidebar/Sidebar";
 import Topbar from "@/components/topbar/Topbar";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";

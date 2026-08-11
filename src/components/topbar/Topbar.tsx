@@ -23,6 +23,7 @@ import { showToast } from "@/lib/toast";
 import LogoutModal from "../modals/LogoutModal";
 import RemovePasskeyModal from "../modals/RemovePasskeyModal";
 import NotificationDropdown, { NotificationItem } from "./NotificationDropdown";
+import Disable2FAModal from "@/components/modals/Disable2FAModal";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -556,33 +557,12 @@ export default function Topbar({ user }: BarProps) {
         </div>
       )}
 
-      {showDisable2FAModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 w-full max-w-sm shadow-xl rounded-3xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Turn off 2FA?
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Your account will be less secure.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowDisable2FAModal(false)}
-                className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDisable2FA}
-                disabled={isDisabling2FA}
-                className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-semibold hover:bg-amber-600"
-              >
-                Turn Off
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Disable2FAModal
+        isOpen={showDisable2FAModal}
+        onClose={() => setShowDisable2FAModal(false)}
+        onConfirm={confirmDisable2FA}
+        isDisabling={isDisabling2FA}
+      />
 
       <LogoutModal
         isOpen={showLogoutModal}

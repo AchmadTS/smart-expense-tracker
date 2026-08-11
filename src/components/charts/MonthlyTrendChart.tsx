@@ -40,36 +40,25 @@ export default function MonthlyTrendChart({
     expense: Number(d.expense) || 0,
   }));
 
+  const minWidthClass =
+    formatted.length > 12
+      ? "min-w-[900px]"
+      : formatted.length > 6
+        ? "min-w-[700px]"
+        : "min-w-[500px]";
+
   return (
     <div className="w-full">
-      <div className="w-full overflow-x-auto pb-2 no-scrollbar [-webkit-overflow-scrolling:touch]">
-        <div className="h-72 min-w-140 w-full">
+      <div className="w-full relative h-72 pl-24">
+        <div className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center pointer-events-none">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={formatted} barCategoryGap="30%" barGap={6}>
-              <defs>
-                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2DD4BF" />
-                  <stop offset="100%" stopColor="#0D9488" />
-                </linearGradient>
-                <linearGradient
-                  id="expenseGradient"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stopColor="#FB7185" />
-                  <stop offset="100%" stopColor="#E11D48" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-slate-100 dark:stroke-slate-800"
-                vertical={false}
-              />
+            <BarChart
+              data={formatted}
+              margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+            >
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#94a3b8", fontSize: 12 }}
+                tick={false}
                 tickLine={false}
                 axisLine={false}
               />
@@ -82,44 +71,89 @@ export default function MonthlyTrendChart({
                   formatCurrency(value, currency)
                 }
               />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
-                contentStyle={{
-                  backgroundColor: "#0f172a",
-                  borderRadius: "12px",
-                  border: "1px solid #334155",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                  fontSize: "12px",
-                  color: "#f8fafc",
-                }}
-                itemStyle={{
-                  color: "#f8fafc",
-                  fontWeight: 600,
-                }}
-                formatter={(value) => {
-                  if (value === undefined || value === null) return [""];
-                  const numericValue = Array.isArray(value)
-                    ? Number(value[0])
-                    : Number(value);
-                  return [formatCurrency(numericValue, currency)];
-                }}
-              />
-              <Bar
-                dataKey="income"
-                name="Pemasukan"
-                fill="url(#incomeGradient)"
-                radius={[10, 10, 10, 10]}
-                background={{ fill: "transparent" }}
-              />
-              <Bar
-                dataKey="expense"
-                name="Pengeluaran"
-                fill="url(#expenseGradient)"
-                radius={[10, 10, 10, 10]}
-                background={{ fill: "transparent" }}
-              />
+              <Bar dataKey="income" fill="none" stroke="none" />
+              <Bar dataKey="expense" fill="none" stroke="none" />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="w-full h-full overflow-x-auto pb-2 no-scrollbar [-webkit-overflow-scrolling:touch]">
+          <div className={`h-full ${minWidthClass}`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={formatted} barCategoryGap="30%" barGap={6}>
+                <defs>
+                  <linearGradient
+                    id="incomeGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor="#2DD4BF" />
+                    <stop offset="100%" stopColor="#0D9488" />
+                  </linearGradient>
+                  <linearGradient
+                    id="expenseGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor="#FB7185" />
+                    <stop offset="100%" stopColor="#E11D48" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-slate-100 dark:stroke-slate-800"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis hide={true} />
+                <Tooltip
+                  cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
+                  contentStyle={{
+                    backgroundColor: "#0f172a",
+                    borderRadius: "12px",
+                    border: "1px solid #334155",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                    fontSize: "12px",
+                    color: "#f8fafc",
+                  }}
+                  itemStyle={{
+                    color: "#f8fafc",
+                    fontWeight: 600,
+                  }}
+                  formatter={(value) => {
+                    if (value === undefined || value === null) return [""];
+                    const numericValue = Array.isArray(value)
+                      ? Number(value[0])
+                      : Number(value);
+                    return [formatCurrency(numericValue, currency)];
+                  }}
+                />
+                <Bar
+                  dataKey="income"
+                  name="Pemasukan"
+                  fill="url(#incomeGradient)"
+                  radius={[10, 10, 10, 10]}
+                  background={{ fill: "transparent" }}
+                />
+                <Bar
+                  dataKey="expense"
+                  name="Pengeluaran"
+                  fill="url(#expenseGradient)"
+                  radius={[10, 10, 10, 10]}
+                  background={{ fill: "transparent" }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 

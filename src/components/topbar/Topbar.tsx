@@ -17,13 +17,14 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { BarProps } from "@/types/user";
-import { startRegistration } from "@simplewebauthn/browser";
 import { showToast } from "@/lib/toast";
 
 import LogoutModal from "../modals/LogoutModal";
 import RemovePasskeyModal from "../modals/RemovePasskeyModal";
 import NotificationDropdown, { NotificationItem } from "./NotificationDropdown";
 import Disable2FAModal from "@/components/modals/Disable2FAModal";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { useSecurity } from "@/hooks/useSecurity";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -46,16 +47,10 @@ export default function Topbar({ user }: BarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isSecurityExpanded, setIsSecurityExpanded] = useState(false);
-
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const saved = localStorage.getItem("theme");
-    if (saved) return saved === "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-
+  const { isDarkMode, setIsDarkMode } = useDarkMode();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
       id: "1",
@@ -75,178 +70,40 @@ export default function Topbar({ user }: BarProps) {
     },
   ]);
 
-  const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false);
-  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
-  const [showRemovePasskeyModal, setShowRemovePasskeyModal] = useState(false);
-  const [isRemovingPasskey, setIsRemovingPasskey] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const {
+    isPasskeyEnabled,
+    isPasskeyLoading,
+    showRemovePasskeyModal,
+    setShowRemovePasskeyModal,
+    isRemovingPasskey,
+    handleTogglePasskey,
+    confirmRemovePasskey,
+    is2FAEnabled,
+    is2FALoading,
+    show2FASetupModal,
+    setShow2FASetupModal,
+    showDisable2FAModal,
+    setShowDisable2FAModal,
+    qrCode,
+    backupCodes,
+    otpToken,
+    setOtpToken,
+    isVerifying2FA,
+    isDisabling2FA,
+    copiedCode,
+    handleToggle2FA,
+    handleVerify2FA,
+    confirmDisable2FA,
+    copyToClipboard,
+  } = useSecurity({ initial2FA: user?.isTwoFactorEnabled });
 
-  const [is2FAEnabled, setIs2FAEnabled] = useState<boolean>(
-    user?.isTwoFactorEnabled || false,
-  );
-
-  const [is2FALoading, setIs2FALoading] = useState(false);
-  const [show2FASetupModal, setShow2FASetupModal] = useState(false);
-  const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
-  const [qrCode, setQrCode] = useState("");
-  const [backupCodes, setBackupCodes] = useState<string[]>([]);
-  const [otpToken, setOtpToken] = useState("");
-  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
-  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    async function checkPasskeyStatus() {
-      try {
-        const resp = await fetch("/api/auth/passkey/status", {
-          credentials: "include",
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          setIsPasskeyEnabled(data.hasPasskey);
-        }
-      } catch (error) {
-        console.error("Failed to check passkey status:", error);
-      }
-    }
-    checkPasskeyStatus();
-  }, []);
-
-  const handleTogglePasskey = async () => {
-    if (isPasskeyEnabled) {
-      setShowRemovePasskeyModal(true);
-      setIsMobileMenuOpen(false);
-      return;
-    }
-
-    try {
-      setIsPasskeyLoading(true);
-      const resp = await fetch("/api/auth/passkey/register-options", {
-        credentials: "include",
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error);
-
-      const attResp = await startRegistration({ optionsJSON: data });
-      const verifyResp = await fetch("/api/auth/passkey/register-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(attResp),
-      });
-
-      const verifyResult = await verifyResp.json();
-      if (verifyResult.success) {
-        setIsPasskeyEnabled(true);
-        showToast("Passkey successfully activated!", "success");
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name !== "NotAllowedError") {
-        showToast(error.message, "error");
-      }
-    } finally {
-      setIsPasskeyLoading(false);
-    }
-  };
-
-  const confirmRemovePasskey = async () => {
-    try {
-      setIsRemovingPasskey(true);
-      const resp = await fetch("/api/auth/passkey/remove", {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!resp.ok) throw new Error();
-
-      setIsPasskeyEnabled(false);
-      setShowRemovePasskeyModal(false);
-      showToast("Passkey successfully removed.", "success");
-    } catch {
-      showToast("An error occurred.", "error");
-    } finally {
-      setIsRemovingPasskey(false);
-    }
-  };
-
-  const handleToggle2FA = async () => {
-    if (is2FAEnabled) {
-      setShowDisable2FAModal(true);
-      setIsMobileMenuOpen(false);
-      return;
-    }
-    try {
-      setIs2FALoading(true);
-      const resp = await fetch("/api/auth/2fa/setup", {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error);
-
-      setQrCode(data.qrCode);
-      setBackupCodes(data.backupCodes);
-      setShow2FASetupModal(true);
-      setIsMobileMenuOpen(false);
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Error", "error");
-    } finally {
-      setIs2FALoading(false);
-    }
-  };
-
-  const handleVerify2FA = async () => {
-    if (otpToken.length !== 6) return showToast("Enter 6 digit code", "info");
-    try {
-      setIsVerifying2FA(true);
-      const resp = await fetch("/api/auth/2fa/verify-setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ token: otpToken }),
-      });
-      if (!resp.ok) throw new Error();
-
-      setIs2FAEnabled(true);
-      setShow2FASetupModal(false);
-      setOtpToken("");
-      showToast("2FA successfully activated!", "success");
-    } catch {
-      showToast("Invalid code", "error");
-    } finally {
-      setIsVerifying2FA(false);
-    }
-  };
-
-  const confirmDisable2FA = async () => {
-    try {
-      setIsDisabling2FA(true);
-      const resp = await fetch("/api/auth/2fa/disable", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!resp.ok) throw new Error();
-
-      setIs2FAEnabled(false);
-      setShowDisable2FAModal(false);
-      showToast("2FA successfully disabled.", "success");
-    } catch {
-      showToast("Error disabling 2FA", "error");
-    } finally {
-      setIsDisabling2FA(false);
-    }
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    showToast("All notifications marked as read", "success");
   };
 
   const handleLogout = async () => {
@@ -263,12 +120,6 @@ export default function Topbar({ user }: BarProps) {
       setShowLogoutModal(false);
       window.location.href = "/login";
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(text);
-    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const currentPageName = pathname
@@ -312,11 +163,7 @@ export default function Topbar({ user }: BarProps) {
               isOpen={isNotificationOpen}
               notifications={notifications}
               unreadCount={unreadCount}
-              onMarkAllAsRead={() =>
-                setNotifications((prev) =>
-                  prev.map((n) => ({ ...n, read: true })),
-                )
-              }
+              onMarkAllAsRead={markAllAsRead}
               onMarkAsRead={(id) =>
                 setNotifications((prev) =>
                   prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
@@ -378,7 +225,11 @@ export default function Topbar({ user }: BarProps) {
                     {isSecurityExpanded && (
                       <div className="w-full bg-slate-50/50 dark:bg-slate-800/50 rounded-xl mt-1 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
                         <button
-                          onClick={handleTogglePasskey}
+                          onClick={() =>
+                            handleTogglePasskey(() =>
+                              setIsMobileMenuOpen(false),
+                            )
+                          }
                           disabled={isPasskeyLoading}
                           className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
                             isPasskeyLoading
@@ -417,7 +268,9 @@ export default function Topbar({ user }: BarProps) {
                         <div className="border-t border-slate-100 dark:border-slate-800"></div>
 
                         <button
-                          onClick={handleToggle2FA}
+                          onClick={() =>
+                            handleToggle2FA(() => setIsMobileMenuOpen(false))
+                          }
                           disabled={is2FALoading}
                           className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
                             is2FALoading

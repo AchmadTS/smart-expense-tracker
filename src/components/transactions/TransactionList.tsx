@@ -150,12 +150,12 @@ export default function TransactionList({
           />
         </div>
 
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full self-start lg:self-auto">
+        <div className="grid grid-cols-3 lg:flex lg:w-auto w-full gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
           {tabs.map((tab) => (
             <button
               key={tab.value || "all"}
               onClick={() => handleTabChange(tab.value)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition flex items-center justify-center gap-2 cursor-pointer ${
                 filters.type === tab.value
                   ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -171,7 +171,7 @@ export default function TransactionList({
           ))}
         </div>
 
-        <div className="relative shrink-0 w-48 sm:w-52">
+        <div className="relative w-full lg:w-48 shrink-0">
           <select
             value={filters.categoryId}
             onChange={(e) =>

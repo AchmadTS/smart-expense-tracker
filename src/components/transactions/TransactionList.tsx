@@ -171,13 +171,13 @@ export default function TransactionList({
           ))}
         </div>
 
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 w-48 sm:w-52">
           <select
             value={filters.categoryId}
             onChange={(e) =>
               handleFilterUpdate({ ...filters, categoryId: e.target.value })
             }
-            className="px-4 py-2 pr-10 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer w-48 sm:w-52 truncate appearance-none"
+            className="w-full pl-4 pr-10 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer truncate appearance-none"
           >
             <option
               value=""
@@ -195,6 +195,7 @@ export default function TransactionList({
               </option>
             ))}
           </select>
+
           <ChevronDown
             size={16}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"

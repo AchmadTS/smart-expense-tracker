@@ -1,5 +1,5 @@
 import Sidebar from "@/components/Sidebar";
-import Topbar from "@/components/Topbar";
+import Topbar from "@/components/topbar/Topbar";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { users } from "@/schemas/schema";

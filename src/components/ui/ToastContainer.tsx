@@ -52,24 +52,24 @@ export default function ToastContainer() {
             aria-live={toast.type === "error" ? "assertive" : "polite"}
           >
             <div
-              className={`relative overflow-hidden flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border text-sm font-medium bg-white ${
+              className={`relative overflow-hidden flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border text-sm font-medium bg-white dark:bg-slate-900 ${
                 toast.type === "error"
-                  ? "border-rose-100 text-slate-900"
+                  ? "border-rose-100 dark:border-rose-950/60 text-slate-900 dark:text-slate-100"
                   : toast.type === "info"
-                    ? "border-blue-100 text-slate-900"
-                    : "border-teal-100 text-slate-900"
+                    ? "border-blue-100 dark:border-blue-950/60 text-slate-900 dark:text-slate-100"
+                    : "border-teal-100 dark:border-teal-950/60 text-slate-900 dark:text-slate-100"
               }`}
             >
               {toast.type === "error" ? (
-                <div className="h-8 w-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                <div className="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
                   <AlertCircle size={18} />
                 </div>
               ) : toast.type === "info" ? (
-                <div className="h-8 w-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                   <Info size={18} />
                 </div>
               ) : (
-                <div className="h-8 w-8 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+                <div className="h-8 w-8 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
                   <CheckCircle2 size={18} />
                 </div>
               )}
@@ -79,7 +79,7 @@ export default function ToastContainer() {
               <button
                 onClick={() => setToast(null)}
                 aria-label="Close notification"
-                className="ml-2 text-slate-400 hover:text-slate-600 transition p-1 cursor-pointer z-10"
+                className="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1 cursor-pointer z-10"
               >
                 <X size={14} />
               </button>

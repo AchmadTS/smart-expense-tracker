@@ -38,12 +38,43 @@ export default function TransactionTrendChart({
   }
 
   const minWidthClass =
-    data.length > 30 ? "min-w-220" : data.length > 10 ? "min-w-160" : "w-full";
+    data.length > 30
+      ? "min-w-[800px]"
+      : data.length > 10
+        ? "min-w-[600px]"
+        : "w-full";
 
   return (
-    <div className="w-full">
-      <div className="w-full overflow-x-auto pb-2 no-scrollbar [-webkit-overflow-scrolling:touch]">
-        <div className={`h-64 ${minWidthClass} w-full`}>
+    <div className="w-full relative h-64 pl-24">
+      <div className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center pointer-events-none">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+          >
+            <XAxis
+              dataKey="label"
+              tick={false}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              tick={{ fill: "#94a3b8", fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              width={96}
+              tickFormatter={(value: number) =>
+                formatCurrency(Number(value) || 0, currency)
+              }
+            />
+            <Area type="monotone" dataKey="income" stroke="none" fill="none" />
+            <Area type="monotone" dataKey="expense" stroke="none" fill="none" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="w-full h-full overflow-x-auto pb-2 no-scrollbar [-webkit-overflow-scrolling:touch]">
+        <div className={`h-full ${minWidthClass}`}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
@@ -71,12 +102,7 @@ export default function TransactionTrendChart({
                 axisLine={false}
                 interval={interval}
               />
-              <YAxis
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={48}
-              />
+              <YAxis hide={true} />
               <Tooltip
                 cursor={{ stroke: "#64748b", strokeDasharray: "3 3" }}
                 contentStyle={{

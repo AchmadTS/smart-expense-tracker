@@ -56,29 +56,35 @@ export default function TransactionTrendChart({
           </defs>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#e5e7eb"
+            className="stroke-slate-100 dark:stroke-slate-800"
             vertical={false}
           />
           <XAxis
             dataKey="label"
-            tick={{ fill: "#6b7280", fontSize: 11 }}
+            tick={{ fill: "#94a3b8", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             interval={interval}
           />
           <YAxis
-            tick={{ fill: "#6b7280", fontSize: 11 }}
+            tick={{ fill: "#94a3b8", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             width={48}
           />
           <Tooltip
-            cursor={{ stroke: "#cbd5e1", strokeDasharray: "3 3" }}
+            cursor={{ stroke: "#64748b", strokeDasharray: "3 3" }}
             contentStyle={{
+              backgroundColor: "#0f172a",
               borderRadius: 12,
-              border: "none",
-              boxShadow: "0 4px 12px rgba(107, 114, 128, 0.15)",
+              border: "1px solid #334155",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
               fontSize: 12,
+              color: "#f8fafc",
+            }}
+            itemStyle={{
+              color: "#f8fafc",
+              fontWeight: 600,
             }}
             formatter={(value) =>
               formatCurrency(Number(value as number) || 0, currency)

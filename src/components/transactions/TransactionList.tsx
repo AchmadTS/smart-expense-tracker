@@ -77,6 +77,23 @@ export default function TransactionList({
     setPage(1);
   };
 
+  const handleTabChange = (newType: string) => {
+    let nextCategoryId = filters.categoryId;
+
+    if (newType !== "" && nextCategoryId) {
+      const selectedCategory = categories.find((c) => c.id === nextCategoryId);
+      if (selectedCategory && selectedCategory.type !== newType) {
+        nextCategoryId = "";
+      }
+    }
+
+    handleFilterUpdate({
+      ...filters,
+      type: newType,
+      categoryId: nextCategoryId,
+    });
+  };
+
   const counts = useMemo(
     () => ({
       all: allTransactions.length,
@@ -136,13 +153,7 @@ export default function TransactionList({
           {tabs.map((tab) => (
             <button
               key={tab.value || "all"}
-              onClick={() =>
-                handleFilterUpdate({
-                  ...filters,
-                  type: tab.value,
-                  categoryId: "",
-                })
-              }
+              onClick={() => handleTabChange(tab.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition flex items-center gap-2 cursor-pointer ${
                 filters.type === tab.value
                   ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100"

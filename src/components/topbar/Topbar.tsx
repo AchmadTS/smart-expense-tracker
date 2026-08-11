@@ -13,8 +13,6 @@ import {
   Moon,
   LogOut,
   Smartphone,
-  Copy,
-  CheckCircle2,
 } from "lucide-react";
 import { BarProps } from "@/types/user";
 import { showToast } from "@/lib/toast";
@@ -23,6 +21,7 @@ import LogoutModal from "../modals/LogoutModal";
 import RemovePasskeyModal from "../modals/RemovePasskeyModal";
 import NotificationDropdown, { NotificationItem } from "./NotificationDropdown";
 import Disable2FAModal from "@/components/modals/Disable2FAModal";
+import TwoFactorSetupModal from "@/components/modals/TwoFactorSetupModal";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useSecurity } from "@/hooks/useSecurity";
 
@@ -98,6 +97,31 @@ export default function Topbar({ user }: BarProps) {
     confirmDisable2FA,
     copyToClipboard,
   } = useSecurity({ initial2FA: user?.isTwoFactorEnabled });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isNotificationOpen) setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isNotificationOpen]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -347,68 +371,18 @@ export default function Topbar({ user }: BarProps) {
         </div>
       </header>
 
-      {show2FASetupModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 w-full max-w-md shadow-xl rounded-3xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Setup 2FA
-            </h3>
-            <div className="text-center">
-              {qrCode && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrCode} alt="QR Code" className="mx-auto w-40 h-40" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Backup Codes:
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {backupCodes.map((code) => (
-                  <div
-                    key={code}
-                    onClick={() => copyToClipboard(code)}
-                    className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-mono cursor-pointer flex justify-between items-center text-slate-700 dark:text-slate-300"
-                  >
-                    <span>{code}</span>
-                    {copiedCode === code ? (
-                      <CheckCircle2 size={12} className="text-teal-500" />
-                    ) : (
-                      <Copy
-                        size={12}
-                        className="text-slate-400 hover:text-teal-600 transition"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <input
-              type="text"
-              maxLength={6}
-              value={otpToken}
-              onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ""))}
-              placeholder="Enter 6-digit code"
-              className="w-full p-2.5 border rounded-xl text-center tracking-widest font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-            />
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShow2FASetupModal(false)}
-                className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleVerify2FA}
-                disabled={isVerifying2FA}
-                className="flex-1 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-semibold hover:bg-teal-700"
-              >
-                Verify
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TwoFactorSetupModal
+        isOpen={show2FASetupModal}
+        onClose={() => setShow2FASetupModal(false)}
+        onVerify={handleVerify2FA}
+        qrCode={qrCode}
+        backupCodes={backupCodes}
+        otpToken={otpToken}
+        setOtpToken={setOtpToken}
+        isVerifying={isVerifying2FA}
+        copiedCode={copiedCode}
+        onCopy={copyToClipboard}
+      />
 
       <Disable2FAModal
         isOpen={showDisable2FAModal}

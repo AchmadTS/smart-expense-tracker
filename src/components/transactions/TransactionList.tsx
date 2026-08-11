@@ -8,6 +8,7 @@ import {
   Wallet,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/utils/format";
 import Button from "@/components/ui/Button";
@@ -170,29 +171,35 @@ export default function TransactionList({
           ))}
         </div>
 
-        <select
-          value={filters.categoryId}
-          onChange={(e) =>
-            handleFilterUpdate({ ...filters, categoryId: e.target.value })
-          }
-          className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer w-48 sm:w-52 shrink-0 truncate"
-        >
-          <option
-            value=""
-            className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+        <div className="relative shrink-0">
+          <select
+            value={filters.categoryId}
+            onChange={(e) =>
+              handleFilterUpdate({ ...filters, categoryId: e.target.value })
+            }
+            className="px-4 py-2 pr-10 rounded-full border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer w-48 sm:w-52 truncate appearance-none"
           >
-            All categories
-          </option>
-          {filteredCategories.map((c) => (
             <option
-              key={c.id}
-              value={c.id}
+              value=""
               className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
             >
-              {c.name}
+              All categories
             </option>
-          ))}
-        </select>
+            {filteredCategories.map((c) => (
+              <option
+                key={c.id}
+                value={c.id}
+                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              >
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={16}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          />
+        </div>
       </div>
 
       {loading ? (

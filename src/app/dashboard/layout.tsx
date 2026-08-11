@@ -58,7 +58,7 @@ export default async function DashboardLayout({
       <Sidebar user={currentUser} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar user={currentUser} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6 bg-slate-50/50 dark:bg-slate-950/50 transition-colors">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6 bg-slate-50/50 dark:bg-slate-950/50 transition-colors no-scrollbar">
           {children}
         </main>
       </div>

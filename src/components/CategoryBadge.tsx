@@ -69,7 +69,7 @@ export default function CategoryBadge({
   return (
     <div className="flex items-center gap-3 min-w-0">
       <div
-        className={`${box} rounded-lg flex items-center justify-center shrink-0`}
+        className={`${box} rounded-lg flex items-center justify-center shrink-0 border border-transparent dark:border-slate-700/50`}
         style={{ backgroundColor: baseColor + "1A" }}
       >
         {createElement(IconComponent, {
@@ -78,7 +78,9 @@ export default function CategoryBadge({
         })}
       </div>
       {name && (
-        <span className="font-medium text-slate-900 truncate">{name}</span>
+        <span className="font-medium text-slate-900 dark:text-slate-200 truncate">
+          {name}
+        </span>
       )}
     </div>
   );

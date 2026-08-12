@@ -62,7 +62,7 @@ export default function NotificationDropdown({
   };
 
   return (
-    <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-xl py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="absolute top-full -right-12 sm:right-0 mt-2 w-75 sm:w-96 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-xl py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="px-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">

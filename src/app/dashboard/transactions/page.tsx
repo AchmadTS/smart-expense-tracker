@@ -22,7 +22,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [counts, setCounts] = useState({ all: 0, income: 0, expense: 0 });
-  
+
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -100,7 +100,7 @@ export default function TransactionsPage() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Transactions
@@ -109,9 +109,14 @@ export default function TransactionsPage() {
               All your income and expenses
             </p>
           </div>
-          <Button onClick={onCreate}>
-            <Plus size={16} /> Add Transaction
-          </Button>
+          <div className="shrink-0 self-start sm:self-auto">
+            <Button
+              onClick={onCreate}
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <Plus size={16} /> Add Transaction
+            </Button>
+          </div>
         </div>
 
         <TransactionTrendCard currency={currency} />

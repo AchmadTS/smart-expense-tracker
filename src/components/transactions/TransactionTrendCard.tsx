@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import TransactionTrendChart from "@/components/charts/TransactionTrendChart";
 import Spinner from "@/components/Spinner";
 
@@ -27,6 +28,13 @@ const MONTH_NAMES = [
   "Oct",
   "Nov",
   "Dec",
+];
+
+const TIME_RANGES = [
+  { value: "30d", label: "30D" },
+  { value: "3m", label: "3M" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
 ];
 
 export default function TransactionTrendCard({
@@ -138,13 +146,9 @@ export default function TransactionTrendCard({
             Income vs expenses over time
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full shrink-0">
-          {[
-            { value: "30d", label: "30D" },
-            { value: "3m", label: "3M" },
-            { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly" },
-          ].map((r) => (
+
+        <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full shrink-0">
+          {TIME_RANGES.map((r) => (
             <button
               key={r.value}
               onClick={() => setTimeRange(r.value)}
@@ -158,6 +162,29 @@ export default function TransactionTrendCard({
               {r.label}
             </button>
           ))}
+        </div>
+
+        <div className="relative block sm:hidden shrink-0">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            disabled={loading}
+            className="pl-4 pr-9 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 cursor-pointer appearance-none disabled:opacity-50"
+          >
+            {TIME_RANGES.map((r) => (
+              <option
+                key={r.value}
+                value={r.value}
+                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              >
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          />
         </div>
       </div>
 

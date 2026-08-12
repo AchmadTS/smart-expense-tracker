@@ -213,7 +213,8 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
+                {" "}
                 {data.userBudgets.slice(0, 4).map((b) => {
                   const spent = parseFloat(b.spent || "0");
                   const total = parseFloat(b.amount || "0");
@@ -221,8 +222,10 @@ export default async function DashboardPage() {
                     total > 0 ? Math.min((spent / total) * 100, 100) : 0;
                   const color =
                     pct >= 100 ? "#F43F5E" : pct >= 70 ? "#F59E0B" : "#10B981";
+
                   return (
-                    <div key={b.id}>
+                    <div key={b.id} className="group">
+                      {" "}
                       <div className="flex justify-between items-center text-xs mb-1.5">
                         <span className="text-slate-700 dark:text-slate-300 font-medium truncate">
                           {b.categoryName}
@@ -232,14 +235,18 @@ export default async function DashboardPage() {
                           {formatCurrency(total, currency)}
                         </span>
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="relative h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full transition-all duration-300 group-hover:h-3">
                         <div
-                          className="h-full rounded-full transition-all"
+                          className="h-full rounded-full transition-all duration-300"
                           style={{
                             width: `${pct}%`,
                             backgroundColor: color,
                           }}
                         />
+
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[10px] font-bold text-white shadow-sm pointer-events-none">
+                          {pct.toFixed(2)}%
+                        </div>
                       </div>
                     </div>
                   );

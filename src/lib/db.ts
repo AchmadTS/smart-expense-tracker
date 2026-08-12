@@ -7,7 +7,11 @@ const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
 };
 
-const conn = globalForDb.conn ?? postgres(connectionString, { max: 10 });
+const conn = globalForDb.conn ?? postgres(connectionString, {
+  max: 5,
+  idle_timeout: 20
+});
+
 if (process.env.NODE_ENV !== 'production') {
   globalForDb.conn = conn;
 }

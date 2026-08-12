@@ -18,9 +18,6 @@ export async function getDashboardData(userId: string) {
         [expenseCurrentRes],
         [incomeLastRes],
         [expenseLastRes],
-        trendRaw,
-        categoryExpensesRaw,
-        rawBudgets,
     ] = await Promise.all([
         db.select({
             id: transactions.id,
@@ -54,7 +51,13 @@ export async function getDashboardData(userId: string) {
         db.select({ total: sum(transactions.amount) })
             .from(transactions)
             .where(and(eq(transactions.userId, userId), eq(transactions.type, "expense"), sql`${transactions.transactionDate} >= ${lastMonthStart}`, sql`${transactions.transactionDate} <= ${lastMonthEnd}`)),
+    ]);
 
+    const [
+        trendRaw,
+        categoryExpensesRaw,
+        rawBudgets,
+    ] = await Promise.all([
         db.select({
             month: sql<string>`substring(CAST(${transactions.transactionDate} AS text) FROM 1 FOR 7)`,
             type: transactions.type,

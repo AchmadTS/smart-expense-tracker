@@ -47,18 +47,18 @@ export default function TransactionAIInsight({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-xs transition-colors">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-colors">
       {!analysis ? (
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 shadow-sm shadow-teal-500/20">
+            <div className="h-10 w-10 rounded-xl sm:rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 shadow-sm shadow-teal-500/20">
               <Sparkles size={18} className="text-white" />
             </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
                 AI Spending Insight
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
                 Get a quick analysis of the {transactions.length} transaction
                 {transactions.length !== 1 ? "s" : ""} in this view
               </p>
@@ -68,6 +68,7 @@ export default function TransactionAIInsight({
             onClick={generateInsight}
             disabled={analysisLoading || transactions.length === 0}
             size="sm"
+            className="w-full sm:w-auto flex justify-center shrink-0"
           >
             {analysisLoading ? (
               <>
@@ -83,22 +84,22 @@ export default function TransactionAIInsight({
           </Button>
         </div>
       ) : (
-        <div className="flex gap-4">
-          <div className="h-10 w-10 rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 shadow-sm shadow-teal-500/20">
-            <Sparkles size={18} className="text-white" />
+        <div className="flex items-start gap-3 sm:gap-4 relative">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0 shadow-sm shadow-teal-500/20 mt-0.5 sm:mt-0">
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2 pr-6 sm:pr-0">
+              <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
                 AI Spending Insight
               </h3>
               {analysis.highlight && (
-                <span className="inline-flex items-center bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full">
                   {analysis.highlight}
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               {analysis.insight}
             </p>
             <button
@@ -111,7 +112,7 @@ export default function TransactionAIInsight({
           </div>
           <button
             onClick={() => setAnalysis(null)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0 p-1 cursor-pointer"
+            className="absolute top-0 right-0 sm:static text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0 p-1 cursor-pointer"
             title="Dismiss"
           >
             <X size={16} />

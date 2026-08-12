@@ -157,12 +157,12 @@ export default function TransactionList({
           />
         </div>
 
-        <div className="grid grid-cols-3 lg:flex lg:w-auto w-full gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
+        <div className="flex w-full lg:w-auto gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
           {tabs.map((tab) => (
             <button
               key={tab.value || "all"}
               onClick={() => handleTabChange(tab.value)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 px-2 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
                 filters.type === tab.value
                   ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -170,7 +170,7 @@ export default function TransactionList({
             >
               {tab.label}
               <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${tab.badge}`}
+                className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-semibold ${tab.badge}`}
               >
                 {tab.count}
               </span>

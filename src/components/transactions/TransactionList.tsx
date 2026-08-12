@@ -223,7 +223,7 @@ export default function TransactionList({
         />
       ) : (
         <div className="flex flex-col w-full min-w-0">
-          <div className="w-full min-w-0 max-h-105 overflow-y-auto overflow-x-auto pr-1">
+          <div className="w-full min-w-0 max-h-105 overflow-y-auto overflow-x-auto no-scrollbar">
             <table className="w-full min-w-175 border-collapse">
               <thead className="sticky top-0 bg-white dark:bg-slate-900 z-20 shadow-xs">
                 <tr className="text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">

@@ -49,8 +49,8 @@ export const transactions = pgTable(
     },
     (table) => [
         check("amount_check", sql`${table.amount} > 0`),
-        index("idx_txn_user_date").on(table.userId, sql`${table.transactionDate} DESC`),
-        index("idx_txn_category").on(table.categoryId)
+        index("idx_txn_user_type_date").on(table.userId, table.type, table.transactionDate.desc()),
+        index("idx_txn_user_category_date").on(table.userId, table.categoryId, table.transactionDate.desc()),
     ]
 );
 

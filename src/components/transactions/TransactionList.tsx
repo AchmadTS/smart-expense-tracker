@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Search,
   Pencil,
@@ -24,13 +24,22 @@ interface FilterState {
   categoryId: string;
 }
 
+interface CountsState {
+  all: number;
+  income: number;
+  expense: number;
+}
+
 interface TransactionListProps {
   transactions: Transaction[];
-  allTransactions: Transaction[];
   categories: Category[];
   currency: string;
   loading: boolean;
   filters: FilterState;
+  counts: CountsState;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   onFilterChange: (newFilters: FilterState) => void;
   onCreate: () => void;
   onEdit: (t: Transaction) => void;
@@ -39,22 +48,32 @@ interface TransactionListProps {
 
 export default function TransactionList({
   transactions,
-  allTransactions,
   categories,
   currency,
   loading,
   filters,
+  counts,
+  currentPage,
+  totalPages,
+  onPageChange,
   onFilterChange,
   onCreate,
   onEdit,
   onDelete,
 }: TransactionListProps) {
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 20;
-  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const startIdx = (safePage - 1) * PAGE_SIZE;
-  const paginated = transactions.slice(startIdx, startIdx + PAGE_SIZE);
+  const [searchTerm, setSearchTerm] = useState(filters.search);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchTerm !== filters.search) {
+        onFilterChange({ ...filters, search: searchTerm });
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchTerm, filters, onFilterChange]);
+
+  const safePage = Math.min(currentPage, totalPages);
 
   const getPageNumbers = () => {
     if (totalPages <= 7)
@@ -75,7 +94,6 @@ export default function TransactionList({
 
   const handleFilterUpdate = (newFilters: FilterState) => {
     onFilterChange(newFilters);
-    setPage(1);
   };
 
   const handleTabChange = (newType: string) => {
@@ -94,15 +112,6 @@ export default function TransactionList({
       categoryId: nextCategoryId,
     });
   };
-
-  const counts = useMemo(
-    () => ({
-      all: allTransactions.length,
-      income: allTransactions.filter((t) => t.type === "income").length,
-      expense: allTransactions.filter((t) => t.type === "expense").length,
-    }),
-    [allTransactions],
-  );
 
   const filteredCategories = useMemo(() => {
     if (!filters.type) return categories;
@@ -141,10 +150,8 @@ export default function TransactionList({
             className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
           />
           <input
-            value={filters.search}
-            onChange={(e) =>
-              handleFilterUpdate({ ...filters, search: e.target.value })
-            }
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search description or notes..."
             className="w-full pl-10 pr-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
           />
@@ -228,7 +235,7 @@ export default function TransactionList({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {paginated.map((t) => (
+              {transactions.map((t) => (
                 <tr
                   key={t.id}
                   className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition"
@@ -288,19 +295,18 @@ export default function TransactionList({
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5 pt-5 border-t border-slate-100 dark:border-slate-800">
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Showing{" "}
+                Page{" "}
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {startIdx + 1}–
-                  {Math.min(startIdx + PAGE_SIZE, transactions.length)}
+                  {safePage}
                 </span>{" "}
                 of{" "}
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {transactions.length}
+                  {totalPages}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => onPageChange(Math.max(1, safePage - 1))}
                   disabled={safePage === 1}
                   className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                 >
@@ -317,7 +323,7 @@ export default function TransactionList({
                   ) : (
                     <button
                       key={p}
-                      onClick={() => setPage(p as number)}
+                      onClick={() => onPageChange(p as number)}
                       className={`h-8 min-w-8 px-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
                         safePage === p
                           ? "bg-teal-600 text-white shadow-sm shadow-teal-500/30"
@@ -329,7 +335,9 @@ export default function TransactionList({
                   ),
                 )}
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    onPageChange(Math.min(totalPages, safePage + 1))
+                  }
                   disabled={safePage === totalPages}
                   className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                 >

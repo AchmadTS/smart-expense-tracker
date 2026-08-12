@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { transactions, categories } from "@/schemas/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, count, ilike, or } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { transactionSchema } from "@/schemas/transaction";
@@ -28,7 +28,55 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const limit = parseInt(searchParams.get("limit") || "50");
+        const page = parseInt(searchParams.get("page") || "1");
+        const limit = parseInt(searchParams.get("limit") || "20");
+        const type = searchParams.get("type");
+        const categoryId = searchParams.get("categoryId");
+        const search = searchParams.get("search");
+        const offset = (page - 1) * limit;
+
+        const typeCounts = await db
+            .select({
+                type: transactions.type,
+                count: count(),
+            })
+            .from(transactions)
+            .where(eq(transactions.userId, userId))
+            .groupBy(transactions.type);
+
+        let allCount = 0;
+        let incomeCount = 0;
+        let expenseCount = 0;
+
+        typeCounts.forEach((row) => {
+            const c = Number(row.count);
+            allCount += c;
+            if (row.type === "income") incomeCount = c;
+            if (row.type === "expense") expenseCount = c;
+        });
+
+        const conditions = [eq(transactions.userId, userId)];
+
+        if (type) {
+            conditions.push(eq(transactions.type, type as "income" | "expense" | "transfer"));
+        }
+        if (categoryId) {
+            conditions.push(eq(transactions.categoryId, categoryId));
+        }
+        if (search) {
+            conditions.push(
+                or(
+                    ilike(transactions.description, `%${search}%`),
+                    ilike(transactions.notes, `%${search}%`)
+                )!
+            );
+        }
+
+        const [{ count: filteredTotal }] = await db
+            .select({ count: count() })
+            .from(transactions)
+            .where(and(...conditions.filter(Boolean)));
+
         const result = await db
             .select({
                 id: transactions.id,
@@ -44,11 +92,21 @@ export async function GET(request: Request) {
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .where(eq(transactions.userId, userId))
-            .orderBy(desc(transactions.transactionDate))
-            .limit(limit);
+            .where(and(...conditions.filter(Boolean)))
+            .orderBy(desc(transactions.transactionDate), desc(transactions.createdAt))
+            .limit(limit)
+            .offset(offset);
 
-        return NextResponse.json({ data: result }, { status: 200 });
+        return NextResponse.json({
+            data: result,
+            total: Number(filteredTotal),
+            counts: {
+                all: allCount,
+                income: incomeCount,
+                expense: expenseCount,
+            },
+            pagination: { page, limit }
+        }, { status: 200 });
     } catch (error) {
         console.error("GET Transactions Error:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });

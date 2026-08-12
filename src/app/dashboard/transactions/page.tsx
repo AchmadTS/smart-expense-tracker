@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
@@ -16,9 +16,13 @@ import { Transaction, Category } from "@/types/transaction";
 export default function TransactionsPage() {
   const { user } = useAuth();
   const currency = user?.currency || "USD";
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [counts, setCounts] = useState({ all: 0, income: 0, expense: 0 });
+  
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -27,12 +31,22 @@ export default function TransactionsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | undefined>(undefined);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: PAGE_SIZE.toString(),
+        ...(filters.type && { type: filters.type }),
+        ...(filters.categoryId && { categoryId: filters.categoryId }),
+        ...(filters.search && { search: filters.search }),
+      });
+
       const [tRes, cRes] = await Promise.all([
-        fetch("/api/transactions?limit=2000").then(async (res) => {
+        fetch(`/api/transactions?${params.toString()}`).then(async (res) => {
           if (!res.ok)
             throw new Error(`API Transactions Error (${res.status})`);
           return res.json();
@@ -42,7 +56,10 @@ export default function TransactionsPage() {
           return res.json();
         }),
       ]);
-      setAllTransactions(tRes.data || tRes || []);
+
+      setTransactions(tRes.data || []);
+      setTotalItems(tRes.total || 0);
+      setCounts(tRes.counts || { all: 0, income: 0, expense: 0 });
       setCategories(cRes.data || cRes || []);
     } catch (error) {
       console.error("Fetch Data Error Detail:", error);
@@ -50,29 +67,13 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, filters]);
 
   useEffect(() => {
     void (async () => {
       await fetchData();
     })();
   }, [fetchData]);
-
-  const filteredTransactions = useMemo(() => {
-    return allTransactions.filter((t) => {
-      if (filters.type && t.type !== filters.type) return false;
-      if (filters.categoryId && t.category_id !== filters.categoryId)
-        return false;
-      if (
-        filters.search &&
-        !t.description?.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !t.notes?.toLowerCase().includes(filters.search.toLowerCase())
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [allTransactions, filters]);
 
   const onEdit = (t: Transaction) => {
     setEditing(t);
@@ -113,21 +114,23 @@ export default function TransactionsPage() {
           </Button>
         </div>
 
-        <TransactionTrendCard
-          allTransactions={allTransactions}
-          currency={currency}
-        />
-
-        <TransactionAIInsight transactions={filteredTransactions} />
+        <TransactionTrendCard currency={currency} />
+        <TransactionAIInsight transactions={transactions} />
 
         <TransactionList
-          transactions={filteredTransactions}
-          allTransactions={allTransactions}
+          transactions={transactions}
           categories={categories}
           currency={currency}
           loading={loading}
           filters={filters}
-          onFilterChange={setFilters}
+          counts={counts}
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onFilterChange={(newFilters) => {
+            setFilters(newFilters);
+            setPage(1);
+          }}
           onCreate={onCreate}
           onEdit={onEdit}
           onDelete={onDelete}

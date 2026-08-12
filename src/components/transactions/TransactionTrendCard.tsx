@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import TransactionTrendChart from "@/components/charts/TransactionTrendChart";
-import { Transaction } from "@/types/transaction";
+import Spinner from "@/components/Spinner";
+
+interface TrendRawData {
+  type: "income" | "expense" | "transfer";
+  amount: string | number;
+  transaction_date: string;
+}
 
 interface TransactionTrendCardProps {
-  allTransactions: Transaction[];
   currency: string;
 }
 
@@ -25,17 +30,37 @@ const MONTH_NAMES = [
 ];
 
 export default function TransactionTrendCard({
-  allTransactions,
   currency,
 }: TransactionTrendCardProps) {
   const [timeRange, setTimeRange] = useState("monthly");
+  const [rawData, setRawData] = useState<TrendRawData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrendData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/transactions/trend?range=${timeRange}`);
+        if (!res.ok) throw new Error("Failed to fetch trend data");
+        const json = await res.json();
+        setRawData(json.data || []);
+      } catch (error) {
+        console.error("Trend Chart Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchTrendData();
+  }, [timeRange]);
 
   const trendData = useMemo(() => {
     const now = new Date();
-    const txnKey = (t: Transaction) => (t.transaction_date || "").split("T")[0];
+    const txnKey = (t: TrendRawData) =>
+      (t.transaction_date || "").split("T")[0];
     const addAmount = (
       entry: { income: number; expense: number },
-      t: Transaction,
+      t: TrendRawData,
     ) => {
       const amount = parseFloat(String(t.amount));
       if (t.type === "income") entry.income += amount;
@@ -56,7 +81,7 @@ export default function TransactionTrendCard({
         buckets.push({ key, label, income: 0, expense: 0 });
       }
       const map = new Map(buckets.map((b) => [b.key, b]));
-      allTransactions.forEach((t) => {
+      rawData.forEach((t) => {
         const entry = map.get(txnKey(t));
         if (entry) addAmount(entry, t);
       });
@@ -72,7 +97,7 @@ export default function TransactionTrendCard({
         buckets.push({ key, label, income: 0, expense: 0 });
       }
       const map = new Map(buckets.map((b) => [b.key, b]));
-      allTransactions.forEach((t) => {
+      rawData.forEach((t) => {
         const parts = txnKey(t).split("-");
         if (parts.length >= 2) {
           const entry = map.get(`${parts[0]}-${parts[1]}`);
@@ -89,7 +114,7 @@ export default function TransactionTrendCard({
         buckets.push({ key: y, label: y, income: 0, expense: 0 });
       }
       const map = new Map(buckets.map((b) => [b.key, b]));
-      allTransactions.forEach((t) => {
+      rawData.forEach((t) => {
         const year = txnKey(t).split("-")[0];
         const entry = map.get(year);
         if (entry) addAmount(entry, t);
@@ -98,12 +123,12 @@ export default function TransactionTrendCard({
     }
 
     return [];
-  }, [allTransactions, timeRange]);
+  }, [rawData, timeRange]);
 
   const chartInterval = timeRange === "30d" ? 3 : timeRange === "3m" ? 10 : 0;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xs transition-colors">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xs transition-colors relative min-h-75">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
@@ -123,7 +148,8 @@ export default function TransactionTrendCard({
             <button
               key={r.value}
               onClick={() => setTimeRange(r.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+              disabled={loading}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer disabled:opacity-50 ${
                 timeRange === r.value
                   ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -134,6 +160,13 @@ export default function TransactionTrendCard({
           ))}
         </div>
       </div>
+
+      {loading ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 rounded-3xl z-10 backdrop-blur-sm">
+          <Spinner />
+        </div>
+      ) : null}
+
       <TransactionTrendChart
         data={trendData}
         currency={currency}

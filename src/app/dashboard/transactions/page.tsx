@@ -120,7 +120,7 @@ export default function TransactionsPage() {
         </div>
 
         <TransactionTrendCard currency={currency} />
-        <TransactionAIInsight transactions={transactions} />
+        <TransactionAIInsight />
 
         <TransactionList
           transactions={transactions}

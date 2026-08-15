@@ -5,36 +5,25 @@ import { Sparkles, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Spinner from "@/components/Spinner";
 import { showToast } from "@/lib/toast";
-import { Transaction } from "@/types/transaction";
 
 interface AnalysisData {
   highlight?: string;
   insight: string;
 }
 
-interface TransactionAIInsightProps {
-  transactions: Transaction[];
-}
-
-export default function TransactionAIInsight({
-  transactions,
-}: TransactionAIInsightProps) {
+export default function TransactionAIInsight() {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const generateInsight = async () => {
-    if (transactions.length === 0) {
-      showToast("No transactions in view to analyze", "info");
-      return;
-    }
     setAnalysisLoading(true);
     try {
-      const ids = transactions.slice(0, 50).map((t) => t.id);
       const res = await fetch("/api/transactions/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionIds: ids }),
+        body: JSON.stringify({ analyzeAll: true }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to analyze");
       setAnalysis(data);
@@ -59,14 +48,13 @@ export default function TransactionAIInsight({
                 AI Spending Insight
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
-                Get a quick analysis of the {transactions.length} transaction
-                {transactions.length !== 1 ? "s" : ""} in this view
+                Get a quick AI analysis of your overall spending patterns
               </p>
             </div>
           </div>
           <Button
             onClick={generateInsight}
-            disabled={analysisLoading || transactions.length === 0}
+            disabled={analysisLoading}
             size="sm"
             className="w-full sm:w-auto flex justify-center shrink-0"
           >
